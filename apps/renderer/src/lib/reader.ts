@@ -344,8 +344,17 @@ body.htmlpub-reader-body {
     max-width: 100% !important;
   }
 
+  .htmlpub-reader-shell .typeset-docs :where(*):not(.not-typeset, [data-not-typeset], .not-typeset *, [data-not-typeset] *) {
+    min-width: 0 !important;
+  }
+
   .htmlpub-reader-shell .typeset-docs :where(h1, h2, h3, h4, h5, h6) {
     max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  .htmlpub-reader-shell .typeset-docs :where(p, li, dt, dd, figcaption, caption) {
     overflow-wrap: anywhere !important;
     white-space: normal !important;
   }

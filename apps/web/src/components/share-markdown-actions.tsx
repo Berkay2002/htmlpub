@@ -23,7 +23,7 @@ async function copyText(value: string): Promise<void> {
   }
 }
 
-export function ShareMarkdownActions({ markdownUrl }: { markdownUrl: string }) {
+export function CopyMarkdownButton({ markdownUrl }: { markdownUrl: string }) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
 
   async function copyMarkdown() {
@@ -43,11 +43,17 @@ export function ShareMarkdownActions({ markdownUrl }: { markdownUrl: string }) {
   const Icon = copyState === "copying" ? LoaderCircle : copyState === "copied" ? Check : Copy;
 
   return (
+    <Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copyMarkdown()} isDisabled={copyState === "copying"}>
+      <Icon data-icon="inline-start" className={copyState === "copying" ? "animate-spin" : undefined} />
+      {label}
+    </Button>
+  );
+}
+
+export function ShareMarkdownActions({ markdownUrl }: { markdownUrl: string }) {
+  return (
     <>
-      <Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copyMarkdown()} isDisabled={copyState === "copying"}>
-        <Icon data-icon="inline-start" className={copyState === "copying" ? "animate-spin" : undefined} />
-        {label}
-      </Button>
+      <CopyMarkdownButton markdownUrl={markdownUrl} />
       <a href={markdownUrl} target="_blank" rel="noreferrer" type="text/markdown" className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl max-sm:hidden`}>
         <FileText data-icon="inline-start" />Markdown
       </a>

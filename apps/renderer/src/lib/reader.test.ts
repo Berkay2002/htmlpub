@@ -17,6 +17,8 @@ describe("the artifact reader mode", () => {
     expect(readerHtml).toContain('href="/render/ticket"');
     expect(readerHtml).toContain("max-width: 72rem");
     expect(readerHtml).toContain("max-width: none");
+    expect(readerHtml).toContain("min-width: 0 !important");
+    expect(readerHtml).toContain("white-space: normal !important");
     expect(readerHtml).toContain("margin-inline-start: auto");
     expect(readerHtml).toContain("<h1>Report</h1>");
     expect(readerHtml).toContain("</article>");
