@@ -4,6 +4,8 @@ import { Archive, Check, Copy, RotateCcw, Share2, Unlink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { readApi } from "@/lib/client-api";
+import { Button } from "@htmlpub/ui/components/button";
+import { Spinner } from "@htmlpub/ui/components/spinner";
 
 export function DocumentActions({ slug, shared }: { slug: string; shared: boolean }) {
   const router = useRouter();
@@ -39,11 +41,11 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
     <section className="sharing-section" id="sharing">
       <div><h2>Sharing</h2><p>Share links always open the latest version and remain valid until revoked or rotated.</p></div>
       <div className="sharing-controls">
-        <button className="button primary" onClick={() => void rotate()}><Share2 size={16} />{shared ? "Rotate link" : "Create link"}</button>
-        {shared ? <button className="button danger" onClick={() => void revoke()}><Unlink size={16} />Revoke</button> : null}
-        <button className="button danger" onClick={() => void archive()}><Archive size={16} />Archive</button>
+        <Button onPress={() => void rotate()}><Share2 data-icon="inline-start" />{shared ? "Rotate link" : "Create link"}</Button>
+        {shared ? <Button variant="destructive" onPress={() => void revoke()}><Unlink data-icon="inline-start" />Revoke</Button> : null}
+        <Button variant="destructive" onPress={() => void archive()}><Archive data-icon="inline-start" />Archive</Button>
       </div>
-      {shareUrl ? <div className="share-result"><code>{shareUrl}</code><button className="button" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy size={15} />Copy</button></div> : null}
+      {shareUrl ? <div className="share-result"><code>{shareUrl}</code><Button variant="outline" onPress={() => void navigator.clipboard.writeText(shareUrl)}><Copy data-icon="inline-start" />Copy</Button></div> : null}
       {message ? <p className="action-message"><Check size={15} />{message}</p> : null}
     </section>
   );
@@ -52,5 +54,5 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
 export function RestoreButton({ slug, version }: { slug: string; version: number }) {
   const router = useRouter(); const [busy, setBusy] = useState(false);
   async function restore() { setBusy(true); try { await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/versions/${version}/restore`, { method: "POST" })); router.refresh(); } finally { setBusy(false); } }
-  return <button className="text-button" disabled={busy} onClick={() => void restore()}><RotateCcw size={14} />{busy ? "Restoring" : "Restore"}</button>;
+  return <Button className="text-button" variant="ghost" size="sm" isDisabled={busy} onPress={() => void restore()}>{busy ? <Spinner data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}{busy ? "Restoring" : "Restore"}</Button>;
 }

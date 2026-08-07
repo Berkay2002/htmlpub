@@ -1,0 +1,103 @@
+/* shadcn/typeset: compact rhythm for rendered copy and document metadata. */
+.typeset {
+  --typeset-font-body: inherit;
+  --typeset-font-heading: inherit;
+  --typeset-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --typeset-size: 1em;
+  --typeset-leading: 1.65;
+  --typeset-flow: 1.25em;
+  color: var(--foreground);
+  font-family: var(--typeset-font-body);
+  font-size: var(--typeset-size);
+  line-height: var(--typeset-leading);
+}
+
+.typeset-ui {
+  --typeset-size: 0.95em;
+  --typeset-leading: 1.55;
+  --typeset-flow: 0.8em;
+}
+
+.typeset-reading {
+  --typeset-size: 1.05em;
+  --typeset-leading: 1.8;
+  --typeset-flow: 1.35em;
+}
+
+.typeset :where(h1, h2, h3, h4, h5, h6) {
+  margin-block: 0;
+  color: var(--foreground);
+  font-family: var(--typeset-font-heading);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.typeset :where(p, ul, ol, blockquote, pre, table, figure) {
+  margin-block: var(--typeset-flow) 0;
+}
+
+.typeset :where(p:first-child, h1:first-child, h2:first-child, h3:first-child, ul:first-child, ol:first-child) {
+  margin-block-start: 0;
+}
+
+.typeset :where(ul, ol) {
+  padding-inline-start: 1.35em;
+}
+
+.typeset :where(li + li) {
+  margin-block-start: 0.35em;
+}
+
+.typeset :where(a) {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.typeset :where(code, kbd, pre) {
+  font-family: var(--typeset-font-mono);
+}
+
+.typeset :where(code) {
+  border-radius: 0.25rem;
+  background: var(--muted);
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+}
+
+.typeset :where(pre) {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+  padding: 1em;
+}
+
+.typeset :where(pre code) {
+  background: transparent;
+  padding: 0;
+}
+
+.typeset :where(blockquote) {
+  border-inline-start: 3px solid var(--border);
+  padding-inline-start: 1em;
+  color: var(--muted-foreground);
+}
+
+.typeset :where(hr) {
+  margin-block: calc(var(--typeset-flow) * 1.5) 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.typeset-scroll {
+  overflow-x: auto;
+}
+
+.not-typeset,
+[data-not-typeset] {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Show, UserButton } from "@clerk/nextjs";
 import { Folder, KeyRound, Library, UploadCloud } from "lucide-react";
 import { useCallback, useState } from "react";
+import { Button, buttonVariants } from "@htmlpub/ui/components/button";
 import { PublishModal } from "./publish-modal";
 
 const items = [
@@ -23,12 +24,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link href="/dashboard" className="brand">htmlpub</Link>
         <nav aria-label="Workspace">
           {items.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className={pathname === href ? "nav-link active" : "nav-link"}>
-              <Icon aria-hidden="true" size={20} strokeWidth={1.6} />{label}
+            <Link key={href} href={href} className={`${buttonVariants({ variant: pathname === href ? "secondary" : "ghost", size: "lg" })} nav-link${pathname === href ? " active" : ""}`}>
+              <Icon aria-hidden="true" data-icon="inline-start" />{label}
             </Link>
           ))}
         </nav>
-        <button className="publish-button" onClick={() => setPublishing(true)}><UploadCloud size={19} />Publish HTML</button>
+        <Button className="publish-button" size="lg" onPress={() => setPublishing(true)}><UploadCloud data-icon="inline-start" /> <span>Publish HTML</span></Button>
         <div className="owner-row"><Show when="signed-in"><UserButton /></Show><span>Workspace owner</span></div>
       </aside>
       <div className="workspace">

@@ -3,8 +3,16 @@
 import { MAX_HTML_BYTES, normalizeSlug, type PublishResult, type StartUploadResult } from "@htmlpub/core";
 import { Check, FileCode2, UploadCloud, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { readApi } from "@/lib/client-api";
+import { Alert, AlertDescription } from "@htmlpub/ui/components/alert";
+import { Button, buttonVariants } from "@htmlpub/ui/components/button";
+import { Checkbox } from "@htmlpub/ui/components/checkbox";
+import { Dialog, DialogClose, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@htmlpub/ui/components/dialog";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@htmlpub/ui/components/field";
+import { Input } from "@htmlpub/ui/components/input";
+import { Progress } from "@htmlpub/ui/components/progress";
+import { Spinner } from "@htmlpub/ui/components/spinner";
 
 type Props = { onClose: () => void };
 
@@ -15,7 +23,6 @@ async function sha256Hex(bytes: ArrayBuffer) {
 
 export function PublishModal({ onClose }: Props) {
   const router = useRouter();
-  const dialogRef = useRef<HTMLDivElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -25,13 +32,6 @@ export function PublishModal({ onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PublishResult | null>(null);
   const busy = progress > 0 && progress < 100;
-
-  useEffect(() => {
-    dialogRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [busy, onClose]);
 
   async function choose(next: File | null) {
     setError(null);
@@ -93,25 +93,23 @@ export function PublishModal({ onClose }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
-      <div className="publish-modal" role="dialog" aria-modal="true" aria-labelledby="publish-title" tabIndex={-1} ref={dialogRef}>
-        <div className="modal-heading"><div><h2 id="publish-title">Publish HTML</h2><p>Upload a self-contained HTML file.</p></div><button className="icon-button" aria-label="Close" onClick={onClose} disabled={busy}><X size={20} /></button></div>
+    <Dialog isOpen isDismissable={!busy} onOpenChange={(open) => { if (!open && !busy) onClose(); }} showCloseButton={false} className="publish-modal">
+        <DialogHeader className="modal-heading"><div><DialogTitle>Publish HTML</DialogTitle><DialogDescription>Upload a self-contained HTML file.</DialogDescription></div><DialogClose className="icon-button" aria-label="Close" isDisabled={busy}><X /></DialogClose></DialogHeader>
         {result ? (
-          <div className="publish-success"><span className="success-icon"><Check size={22} /></span><h3>{result.duplicate ? "Already up to date" : `Published version ${result.version}`}</h3><p>The stable document URL is ready.</p><div className="success-actions"><a className="button primary" href={result.dashboardUrl}>Open document</a>{result.shareUrl ? <a className="button" href={result.shareUrl} target="_blank" rel="noreferrer">Open share link</a> : null}</div></div>
+          <div className="publish-success"><span className="success-icon"><Check /></span><h3>{result.duplicate ? "Already up to date" : `Published version ${result.version}`}</h3><p>The stable document URL is ready.</p><div className="success-actions"><a className={buttonVariants()} href={result.dashboardUrl}>Open document</a>{result.shareUrl ? <a className={buttonVariants({ variant: "outline" })} href={result.shareUrl} target="_blank" rel="noreferrer">Open share link</a> : null}</div></div>
         ) : (
           <>
             <label className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void choose(event.dataTransfer.files[0] ?? null); }}>
-              <UploadCloud size={30} strokeWidth={1.5} /><strong>Drop an .html file here</strong><span>or choose a file</span><input type="file" accept=".html,text/html" onChange={(event) => void choose(event.target.files?.[0] ?? null)} />
+              <UploadCloud aria-hidden="true" /><strong>Drop an .html file here</strong><span>or choose a file</span><input type="file" accept=".html,text/html" onChange={(event) => void choose(event.target.files?.[0] ?? null)} />
             </label>
-            {file ? <div className="selected-file"><FileCode2 size={21} /><div><strong>{file.name}</strong><span>{Math.ceil(file.size / 1024)} KB</span></div><button className="text-button" onClick={() => void choose(null)} disabled={busy}>Remove</button>{progress > 0 ? <div className="progress"><span style={{ width: `${progress}%` }} /></div> : null}</div> : null}
+            {file ? <div className="selected-file"><FileCode2 aria-hidden="true" /><div><strong>{file.name}</strong><span>{Math.ceil(file.size / 1024)} KB</span></div><Button className="text-button" variant="ghost" size="sm" onPress={() => void choose(null)} isDisabled={busy}>Remove</Button>{progress > 0 ? <Progress value={progress} aria-label="Upload progress" className="upload-progress" /> : null}</div> : null}
             <p className="constraint">UTF-8 HTML, up to 10 MB</p>
-            <div className="field-grid"><label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label>Slug<input value={slug} onChange={(event) => setSlug(event.target.value)} /><small>Used in the stable document URL.</small></label><label>Collection<input value={collection} onChange={(event) => setCollection(event.target.value)} placeholder="Optional" /></label></div>
-            <label className="checkbox-row"><input type="checkbox" checked={share} onChange={(event) => setShare(event.target.checked)} /><span><strong>Create a share link</strong><small>Anyone with the link can view the latest version.</small></span></label>
-            {error ? <p className="form-error" role="alert">{error}</p> : null}
-            <div className="modal-actions"><button className="button" onClick={onClose} disabled={busy}>Cancel</button><button className="button primary" onClick={() => void publish()} disabled={!file || !title.trim() || !slug.trim() || busy}>{busy ? `Uploading ${progress}%` : "Publish"}</button></div>
+            <FieldGroup className="field-grid"><Field><FieldLabel htmlFor="publish-title">Title</FieldLabel><Input id="publish-title" value={title} onChange={(event) => setTitle(event.target.value)} /></Field><Field><FieldLabel htmlFor="publish-slug">Slug</FieldLabel><Input id="publish-slug" value={slug} onChange={(event) => setSlug(event.target.value)} /><FieldDescription>Used in the stable document URL.</FieldDescription></Field><Field><FieldLabel htmlFor="publish-collection">Collection</FieldLabel><Input id="publish-collection" value={collection} onChange={(event) => setCollection(event.target.value)} placeholder="Optional" /></Field></FieldGroup>
+            <Checkbox className="checkbox-row" isSelected={share} onChange={setShare}><span><strong>Create a share link</strong><small>Anyone with the link can view the latest version.</small></span></Checkbox>
+            {error ? <Alert variant="destructive" className="form-error"><AlertDescription>{error}</AlertDescription></Alert> : null}
+            <DialogFooter className="modal-actions"><Button variant="outline" onPress={onClose} isDisabled={busy}>Cancel</Button><Button onPress={() => void publish()} isDisabled={!file || !title.trim() || !slug.trim() || busy}>{busy ? <><Spinner data-icon="inline-start" />Uploading {progress}%</> : "Publish"}</Button></DialogFooter>
           </>
         )}
-      </div>
-    </div>
+    </Dialog>
   );
 }

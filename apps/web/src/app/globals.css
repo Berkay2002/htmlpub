@@ -1,3 +1,5 @@
+@import "@htmlpub/ui/globals.css";
+
 :root {
   --ink: #111318;
   --muted: #667085;
@@ -116,8 +118,8 @@ a.document-row.selected { border: 1px solid #b9cffb; border-radius: 7px; backgro
 .token-form input { width: 220px; padding: 0 12px; }
 
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; padding: 28px; display: grid; place-items: center; overflow: auto; background: rgba(16, 24, 40, .26); backdrop-filter: blur(2px); animation: fade-in 140ms ease-out; }
-.publish-modal { width: min(540px, 100%); max-height: calc(100vh - 56px); padding: 28px; overflow: auto; border: 1px solid var(--line-strong); border-radius: 11px; background: #fff; box-shadow: var(--shadow); animation: modal-in 180ms ease-out; }
-.modal-heading { display: flex; justify-content: space-between; gap: 20px; }
+.publish-modal { width: min(540px, 100%); max-width: min(540px, calc(100% - 2rem)); max-height: calc(100vh - 56px); padding: 28px; overflow: auto; border: 1px solid var(--line-strong); border-radius: 11px; background: #fff; box-shadow: var(--shadow); animation: modal-in 180ms ease-out; }
+.modal-heading { display: flex; flex-direction: row; justify-content: space-between; gap: 20px; }
 .modal-heading h2 { margin: 0; font-size: 23px; letter-spacing: -.025em; }
 .modal-heading p { margin: 8px 0 0; color: var(--muted); }
 .icon-button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; cursor: pointer; }
@@ -128,6 +130,7 @@ a.document-row.selected { border: 1px solid #b9cffb; border-radius: 7px; backgro
 .selected-file { position: relative; min-height: 74px; margin-top: 12px; padding: 13px 12px 17px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 11px; border: 1px solid var(--line); border-radius: 8px; }
 .selected-file > div { display: grid; }
 .selected-file span { color: var(--muted); font-size: 11px; }
+.upload-progress { position: absolute; right: 12px; bottom: 8px; left: 12px; width: auto; }
 .progress { position: absolute; left: 12px; right: 12px; bottom: 8px; height: 4px; overflow: hidden; border-radius: 2px; background: #edf0f4; }
 .progress span { display: block; height: 100%; background: var(--blue); transition: width 220ms ease; }
 .constraint { margin: 9px 0 19px; color: var(--muted); font-size: 11px; }

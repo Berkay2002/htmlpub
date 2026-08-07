@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "noEmit": true,
+    "exactOptionalPropertyTypes": false,
+    "baseUrl": ".",
+    "resolvePackageJsonImports": true,
+    "paths": {
+      "@htmlpub/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}
