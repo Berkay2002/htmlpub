@@ -1,6 +1,7 @@
 "use client";
 
-import { Archive, Copy, RotateCcw, Share2, Unlink } from "lucide-react";
+import { Archive, ArrowRight, Copy, RotateCcw, Share2, Trash2, Unlink } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,9 +9,59 @@ import { readApi } from "@/lib/client-api";
 import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle } from "@htmlpub/ui/components/alert-dialog";
 import { Alert, AlertDescription } from "@htmlpub/ui/components/alert";
 import { Button } from "@htmlpub/ui/components/button";
+import { buttonVariants } from "@htmlpub/ui/lib/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@htmlpub/ui/components/card";
 import { Spinner } from "@htmlpub/ui/components/spinner";
 import type { ShareResult } from "@htmlpub/core";
+
+export function LibraryDocumentActions({ slug, title }: { slug: string; title: string }) {
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  async function deleteDocument() {
+    setDeleting(true);
+    try {
+      await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}`, { method: "DELETE" }));
+      toast.success("Document deleted");
+      setConfirming(false);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Deleting failed");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-end gap-1">
+        <Link className={buttonVariants({ variant: "outline", size: "sm" })} href={`/dashboard/documents/${encodeURIComponent(slug)}`}>
+          Open
+          <ArrowRight data-icon="inline-end" />
+        </Link>
+        <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onPress={() => setConfirming(true)} aria-label={`Delete ${title}`}>
+          <Trash2 />
+        </Button>
+      </div>
+
+      <AlertDialogContent isOpen={confirming} onOpenChange={setConfirming} size="sm">
+        <AlertDialogHeader>
+          <AlertDialogMedia><Trash2 /></AlertDialogMedia>
+          <AlertDialogTitle>Delete this document?</AlertDialogTitle>
+          <AlertDialogDescription>{title} will be removed from the library and any active share link will stop working. This cannot be undone from the workspace.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+          <AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onPress={() => void deleteDocument()} isDisabled={deleting}>
+            {deleting ? <Spinner data-icon="inline-start" /> : null}
+            {deleting ? "Deleting" : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </>
+  );
+}
 
 export function DocumentActions({ slug, shared }: { slug: string; shared: boolean }) {
   const router = useRouter();

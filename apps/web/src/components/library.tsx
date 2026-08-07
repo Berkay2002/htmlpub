@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@html
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@htmlpub/ui/components/empty";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@htmlpub/ui/components/table";
 import { cn } from "@htmlpub/ui/lib/utils";
+import { LibraryDocumentActions } from "@/components/document-actions";
 
 const dateFormatter = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -35,11 +36,12 @@ export function LibraryTable({ documents, selectedSlug }: { documents: DocumentS
       ) : (
         <Table aria-label="Published documents">
           <TableHeader className="border-border/70 bg-muted/35">
-            <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Document</TableHead>
+            <TableHead isRowHeader className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Document</TableHead>
             <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:table-cell">Collection</TableHead>
             <TableHead className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Versions</TableHead>
             <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:table-cell">Updated</TableHead>
             <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Sharing</TableHead>
+            <TableHead className="px-4 text-right text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Actions</TableHead>
           </TableHeader>
           <TableBody>
             {documents.map((document) => {
@@ -66,6 +68,9 @@ export function LibraryTable({ documents, selectedSlug }: { documents: DocumentS
                       {document.shared ? <Globe2 data-icon="inline-start" /> : <LockKeyhole data-icon="inline-start" />}
                       <span className="hidden sm:inline">{document.shared ? "Public" : "Private"}</span>
                     </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 sm:px-5">
+                    <LibraryDocumentActions slug={document.slug} title={document.title} />
                   </TableCell>
                 </TableRow>
               );

@@ -21,7 +21,7 @@ body.htmlpub-reader-body {
   --reader-muted: #64748b;
   --reader-accent: #2563eb;
   position: relative;
-  max-width: 76rem;
+  max-width: 100rem;
   margin-inline: auto;
   padding: clamp(0.75rem, 2vw, 1.5rem);
   color-scheme: light;
@@ -68,7 +68,7 @@ body.htmlpub-reader-body {
   --color-primary: var(--reader-accent);
   --color-ring: var(--reader-accent);
   width: 100%;
-  max-width: 42em;
+  max-width: 72rem;
   margin-inline: auto;
 }
 
@@ -81,11 +81,11 @@ body.htmlpub-reader-body {
 }
 
 .htmlpub-reader-shell[data-reader-width="narrow"] .typeset-docs {
-  max-width: 36em;
+  max-width: 42rem;
 }
 
 .htmlpub-reader-shell[data-reader-width="wide"] .typeset-docs {
-  max-width: 60em;
+  max-width: none;
 }
 
 .htmlpub-reader-skip {
@@ -107,13 +107,14 @@ body.htmlpub-reader-body {
 }
 
 .htmlpub-reader-toolbar {
-  position: sticky;
+  position: static;
   z-index: 5;
-  top: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  width: min(100%, 76rem);
+  margin-inline: auto;
   margin-block-end: 1rem;
   border: 1px solid var(--reader-border);
   border-radius: 0.75rem;
@@ -244,10 +245,11 @@ body.htmlpub-reader-body {
 }
 
 .htmlpub-reader-backtop {
-  position: fixed;
+  position: static;
   z-index: 6;
-  right: 1rem;
-  bottom: 1rem;
+  display: block;
+  margin-inline-start: auto;
+  margin-block-start: 1rem;
   border: 1px solid var(--reader-border);
   border-radius: 999px;
   background: var(--reader-bg);
