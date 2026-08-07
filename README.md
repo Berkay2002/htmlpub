@@ -19,11 +19,15 @@ Requirements: Node 20.9 or later and pnpm 10.
 ```bash
 pnpm install
 copy .env.example .env.local
+copy apps\web\.env.example apps\web\.env.local
+copy apps\renderer\.env.example apps\renderer\.env.local
 pnpm db:migrate
 pnpm dev
 ```
 
 The web app runs at `http://localhost:3000`; the renderer runs at `http://localhost:3001`.
+
+Set the web variables in `apps/web/.env.local`, the renderer variables in `apps/renderer/.env.local`, and `DATABASE_URL` in the root `.env.local` used by migrations. Do not put Clerk variables in the renderer file. When the projects are already linked, `vercel env pull .env.local --cwd apps/web` and `vercel env pull .env.local --cwd apps/renderer` are the least error-prone setup path.
 
 Local development uses the same Clerk, Neon, and private Blob resources as deployment. No mock data or alternate publishing path is included.
 

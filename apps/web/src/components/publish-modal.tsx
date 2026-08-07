@@ -1,21 +1,16 @@
 "use client";
 
-import { MAX_HTML_BYTES, normalizeSlug, type ApiEnvelope, type PublishResult, type StartUploadResult } from "@htmlpub/core";
+import { MAX_HTML_BYTES, normalizeSlug, type PublishResult, type StartUploadResult } from "@htmlpub/core";
 import { Check, FileCode2, UploadCloud, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { readApi } from "@/lib/client-api";
 
 type Props = { onClose: () => void };
 
 async function sha256Hex(bytes: ArrayBuffer) {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
-}
-
-async function readApi<T>(response: Response): Promise<T> {
-  const envelope = await response.json() as ApiEnvelope<T>;
-  if (!envelope.ok) throw new Error(envelope.error.message);
-  return envelope.data;
 }
 
 export function PublishModal({ onClose }: Props) {
@@ -68,7 +63,15 @@ export function PublishModal({ onClose }: Props) {
         body: JSON.stringify({ slug: normalizeSlug(slug), title, ...(collection.trim() ? { collection: collection.trim() } : {}), byteSize: file.size, sha256: hash, filename: file.name })
       }));
       if (started.status === "duplicate") {
-        setResult(started.result); setProgress(100); return;
+        let shareUrl: string | null = null;
+        if (share) {
+          const shared = await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(started.result.slug)}/share`, { method: "POST" }));
+          shareUrl = shared.url;
+        }
+        setResult({ ...started.result, shareUrl });
+        setProgress(100);
+        router.refresh();
+        return;
       }
       setProgress(42);
       const uploadResponse = await fetch(started.uploadUrl, { method: "PUT", headers: { "content-type": "text/html" }, body: bytes });

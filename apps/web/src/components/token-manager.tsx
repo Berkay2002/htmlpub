@@ -1,12 +1,10 @@
 "use client";
 
-import type { ApiEnvelope } from "@htmlpub/core";
 import { Copy, KeyRound, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { readApi } from "@/lib/client-api";
 
 type TokenRecord = { id: string; name: string; displayPrefix: string; scopes: string[]; lastUsedAt: string | Date | null; revokedAt: string | Date | null; createdAt: string | Date };
-
-async function readApi<T>(response: Response): Promise<T> { const body = await response.json() as ApiEnvelope<T>; if (!body.ok) throw new Error(body.error.message); return body.data; }
 
 export function TokenManager({ initial }: { initial: TokenRecord[] }) {
   const [tokens, setTokens] = useState(initial);

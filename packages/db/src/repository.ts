@@ -56,10 +56,11 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
 
     async createUpload(ownerId: string, request: PublishRequest, expiresAt: Date) {
       await ensureAccount(ownerId);
-      const collectionId = await resolveCollection(ownerId, request.collection);
-      await db.insert(documents).values({ ownerId, slug: request.slug, title: request.title, collectionId }).onConflictDoNothing();
+      const requestedCollectionId = await resolveCollection(ownerId, request.collection);
+      await db.insert(documents).values({ ownerId, slug: request.slug, title: request.title, collectionId: requestedCollectionId }).onConflictDoNothing();
       const [document] = await db.select().from(documents).where(and(eq(documents.ownerId, ownerId), eq(documents.slug, request.slug))).limit(1);
       if (!document) throw new AppError("document_unavailable", "Document could not be prepared", 500);
+      const collectionId = request.collection ? requestedCollectionId : document.collectionId;
 
       const id = randomUUID();
       const versionId = randomUUID();

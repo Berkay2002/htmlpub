@@ -1,15 +1,9 @@
 "use client";
 
-import type { ApiEnvelope } from "@htmlpub/core";
-import { Check, Copy, RotateCcw, Share2, Unlink } from "lucide-react";
+import { Archive, Check, Copy, RotateCcw, Share2, Unlink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-async function readApi<T>(response: Response): Promise<T> {
-  const value = await response.json() as ApiEnvelope<T>;
-  if (!value.ok) throw new Error(value.error.message);
-  return value.data;
-}
+import { readApi } from "@/lib/client-api";
 
 export function DocumentActions({ slug, shared }: { slug: string; shared: boolean }) {
   const router = useRouter();
@@ -30,8 +24,28 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
     } catch (error) { setMessage(error instanceof Error ? error.message : "Revocation failed"); }
   }
 
+  async function archive() {
+    if (!window.confirm("Archive this document and revoke its active share link?")) return;
+    try {
+      await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}`, { method: "DELETE" }));
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Archiving failed");
+    }
+  }
+
   return (
-    <section className="sharing-section" id="sharing"><div><h2>Sharing</h2><p>Share links always open the latest version and remain valid until revoked or rotated.</p></div><div className="sharing-controls"><button className="button primary" onClick={() => void rotate()}><Share2 size={16} />{shared ? "Rotate link" : "Create link"}</button>{shared ? <button className="button danger" onClick={() => void revoke()}><Unlink size={16} />Revoke</button> : null}</div>{shareUrl ? <div className="share-result"><code>{shareUrl}</code><button className="button" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy size={15} />Copy</button></div> : null}{message ? <p className="action-message"><Check size={15} />{message}</p> : null}</section>
+    <section className="sharing-section" id="sharing">
+      <div><h2>Sharing</h2><p>Share links always open the latest version and remain valid until revoked or rotated.</p></div>
+      <div className="sharing-controls">
+        <button className="button primary" onClick={() => void rotate()}><Share2 size={16} />{shared ? "Rotate link" : "Create link"}</button>
+        {shared ? <button className="button danger" onClick={() => void revoke()}><Unlink size={16} />Revoke</button> : null}
+        <button className="button danger" onClick={() => void archive()}><Archive size={16} />Archive</button>
+      </div>
+      {shareUrl ? <div className="share-result"><code>{shareUrl}</code><button className="button" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy size={15} />Copy</button></div> : null}
+      {message ? <p className="action-message"><Check size={15} />{message}</p> : null}
+    </section>
   );
 }
 
