@@ -7,7 +7,7 @@ htmlpub is a private publishing workspace for self-contained interactive HTML re
 ## Repository layout
 
 - `apps/web`: Clerk-authenticated dashboard, versioned HTTP interface, share pages, and cleanup cron.
-- `apps/renderer`: cookie-free HTML streaming origin with signed five-minute render tickets and restrictive sandbox headers.
+- `apps/renderer`: cookie-free HTML streaming origin with signed 30-day render tickets and restrictive sandbox headers.
 - `packages/core`: validation, security primitives, render tickets, and the two-phase publishing module.
 - `packages/db`: Drizzle schema, Neon adapter, and generated SQL migrations.
 - `packages/cli`: the `htmlpub` npm command.
@@ -53,7 +53,7 @@ POST /api/v1/uploads/{uploadId}/complete
 
 Upload initiation validates a UTF-8 `.html` file declaration, creates an expiring session, and returns a ten-minute Blob URL restricted to one immutable pathname, `text/html`, and the declared size. Completion inspects Blob metadata before transactionally allocating the next version number. Repeating completion is idempotent.
 
-Share tokens are 256-bit bearer secrets stored only as SHA-256 hashes. Creating a new link revokes the previous link because the original secret cannot be recovered. A share page and its stable `/markdown` and `/raw` content URLs resolve the current version and send only a five-minute render ticket to the isolated renderer.
+Share tokens are 256-bit bearer secrets stored only as SHA-256 hashes. Publishing automatically creates one active share link when a document has none; later versions keep that same link and resolve the current version. Creating a new link manually revokes the previous link because the original secret cannot be recovered. A share page and its stable `/markdown` and `/raw` content URLs resolve the current version and send only a 30-day render ticket to the isolated renderer.
 
 ## CLI
 
@@ -75,7 +75,7 @@ See [`packages/cli/README.md`](packages/cli/README.md) for the command and JSON 
 
 This repository is the plugin root. Its manifest is in `.codex-plugin/plugin.json`, its agent workflows are under `skills/`, and `.agents/plugins/marketplace.json` points Codex at this GitHub repository. The plugin exposes separate skills for publishing artifacts and managing the HTML library.
 
-Share creation returns a human reader `url`, an agent-friendly `markdownUrl`, and a raw HTML `contentUrl`. Give agents the Markdown link by default for compact GFM text, tables, code fences, and preserved Mermaid source blocks. Use the raw link when an agent needs the authoritative HTML, interactive code, or structure that Markdown cannot represent. All three are bearer links and remain valid until revoked or rotated.
+Share creation returns a human reader `url`, an agent-friendly `markdownUrl`, and a raw HTML `contentUrl`. Give agents the Markdown link by default for compact GFM text, tables, code fences, and preserved Mermaid source blocks. Use the raw link when an agent needs the authoritative HTML, interactive code, or structure that Markdown cannot represent. The public reader also provides a Share to agent action that copies a ready-to-paste prompt with the raw HTML link and artifact context. All three are bearer links and remain valid until revoked or rotated.
 
 After these files are available on the selected Git ref, add and install the GitHub-backed marketplace:
 

@@ -70,7 +70,7 @@ program.command("publish").description("Publish an HTML file or create the next 
     await client.upload(started.uploadUrl, inspected.bytes);
     printProgress("Finalizing immutable version…", jsonMode());
     const result = await client.request<PublishResult>("POST", `/api/v1/uploads/${started.uploadId}/complete`);
-    printSuccess(result, jsonMode(), `Published ${result.title} v${result.version}.\n${result.dashboardUrl}`);
+    printSuccess(result, jsonMode(), `Published ${result.title} v${result.version}.\n${result.dashboardUrl}${result.shareUrl ? `\nReader share: ${result.shareUrl}\nRaw HTML share: ${result.shareContentUrl}` : ""}`);
   });
 
 type DocumentVersion = { id: string; versionNumber: number; sourceFilename: string; byteSize: number; createdAt: string; restoredFromVersionId: string | null };

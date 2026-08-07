@@ -33,7 +33,7 @@ htmlpub unshare launch-plan
 
 `--type summary`, `plan`, `review`, or `report` assigns the matching stable collection. Use `--collection` for any other collection name. The two flags are intentionally mutually exclusive.
 
-Publishing to an existing owner-scoped slug creates the next version. Identical content returns the existing version without uploading bytes. Use a stable `--slug` when successive agent runs should update the same artifact. `share` creates a new token and revokes any previous share link because share secrets are never stored in recoverable form.
+Publishing to an existing owner-scoped slug creates the next version. Identical content returns the existing version without uploading bytes. Use a stable `--slug` when successive agent runs should update the same artifact. Publishing automatically creates one active share link when the document has none, and later versions keep that link pointed at the latest version. `share` is the explicit rotate operation: it creates a new token and revokes any previous share link because share secrets are never stored in recoverable form.
 
 The JSON share result contains three public bearer links:
 
@@ -41,7 +41,7 @@ The JSON share result contains three public bearer links:
 {"ok":true,"data":{"slug":"launch-plan","url":"https://htmlpub.example/s/token","markdownUrl":"https://htmlpub.example/s/token/markdown","contentUrl":"https://htmlpub.example/s/token/raw","rotated":true}}
 ```
 
-Give `url` to a person for the reader page. Give `markdownUrl` to an agent by default for compact GFM text. Give `contentUrl` to an agent or HTTP client that needs the authoritative HTML bytes, scripts, or interactive structure. Both content URLs follow a temporary redirect to the isolated renderer and require no htmlpub API token. Revoking or rotating sharing invalidates all three stable URLs.
+Give `url` to a person for the reader page. Give `markdownUrl` to an agent by default for compact GFM text. Give `contentUrl` to an agent or HTTP client that needs the authoritative HTML bytes, scripts, or interactive structure. Both content URLs follow a temporary redirect to the isolated renderer and require no htmlpub API token. The reader page's Share to agent action copies a ready-to-paste prompt with the raw HTML link and artifact context. Revoking or rotating sharing invalidates all three stable URLs.
 
 Restore an earlier immutable version by first inspecting history, then previewing the write:
 

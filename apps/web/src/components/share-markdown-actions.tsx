@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, FileText, LoaderCircle } from "lucide-react";
+import { Bot, Check, Copy, FileText, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@htmlpub/ui/components/button";
 import { buttonVariants } from "@htmlpub/ui/lib/button-variants";
@@ -50,10 +50,42 @@ export function CopyMarkdownButton({ markdownUrl }: { markdownUrl: string }) {
   );
 }
 
-export function ShareMarkdownActions({ markdownUrl }: { markdownUrl: string }) {
+function agentPrompt({ title, rawUrl }: { title: string; rawUrl: string }) {
+  return [
+    "Fetch this htmlpub artifact and use it as the source of truth.",
+    "",
+    `Artifact: ${title}`,
+    `Raw HTML: ${rawUrl}`,
+    "",
+    "Identify whether it is a plan, summary, review, report, or another useful artifact. Then produce the most useful next step from its contents, using embedded scripts, SVG, tables, and Mermaid when relevant."
+  ].join("\n");
+}
+
+export function ShareToAgentButton({ title, rawUrl }: { title: string; rawUrl: string }) {
+  const [copyState, setCopyState] = useState<CopyState>("idle");
+
+  async function shareToAgent() {
+    setCopyState("copying");
+    try {
+      await copyText(agentPrompt({ title, rawUrl }));
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 2200);
+    } catch {
+      setCopyState("failed");
+    }
+  }
+
+  const label = copyState === "copying" ? "Preparing" : copyState === "copied" ? "Copied prompt" : copyState === "failed" ? "Try again" : "Share to agent";
+  const Icon = copyState === "copying" ? LoaderCircle : copyState === "copied" ? Check : Bot;
+
+  return <Button variant="outline" size="sm" className="rounded-xl" onPress={() => void shareToAgent()} isDisabled={copyState === "copying"}><Icon data-icon="inline-start" className={copyState === "copying" ? "animate-spin" : undefined} />{label}</Button>;
+}
+
+export function ShareMarkdownActions({ title, markdownUrl, rawUrl }: { title: string; markdownUrl: string; rawUrl: string }) {
   return (
     <>
       <CopyMarkdownButton markdownUrl={markdownUrl} />
+      <ShareToAgentButton title={title} rawUrl={rawUrl} />
       <a href={markdownUrl} target="_blank" rel="noreferrer" type="text/markdown" className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl max-sm:hidden`}>
         <FileText data-icon="inline-start" />Markdown
       </a>

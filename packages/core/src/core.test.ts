@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_HTML_BYTES, createOpaqueToken, createRenderTicket, createShareUrls, normalizeSlug, publishRequestSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
+import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, createOpaqueToken, createRenderTicket, createShareUrls, normalizeSlug, publishRequestSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
 
 describe("the publishing contract", () => {
   it("normalizes a filename into a stable URL slug", () => {
@@ -32,10 +32,11 @@ describe("the publishing contract", () => {
     });
   });
 
-  it("accepts an unexpired render ticket and rejects it after five minutes", () => {
+  it("accepts an unexpired render ticket and rejects it after thirty days", () => {
+    expect(RENDER_TICKET_TTL_MS).toBe(30 * 24 * 60 * 60 * 1000);
     const ticket = createRenderTicket("4a87a1cc-f3f7-4f25-ae22-12f38554dada", "test-secret", 1_000);
-    expect(verifyRenderTicket(ticket, "test-secret", 300_999).versionId).toBe("4a87a1cc-f3f7-4f25-ae22-12f38554dada");
-    expect(() => verifyRenderTicket(ticket, "test-secret", 301_000)).toThrow("expired");
+    expect(verifyRenderTicket(ticket, "test-secret", 1_000 + RENDER_TICKET_TTL_MS - 1).versionId).toBe("4a87a1cc-f3f7-4f25-ae22-12f38554dada");
+    expect(() => verifyRenderTicket(ticket, "test-secret", 1_000 + RENDER_TICKET_TTL_MS)).toThrow("expired");
   });
 
   it("rejects a render ticket changed by the embedded document", () => {

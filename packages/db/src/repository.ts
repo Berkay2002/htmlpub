@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, ilike, inArray, isNotNull, isNull, lt, notExists, or, sql } from "drizzle-orm";
-import { AppError, createOpaqueToken, createShareUrls, normalizeSlug, sha256, type BlobMetadata, type DocumentSummary, type PendingUpload, type PublishRepository, type PublishRequest, type PublishResult } from "@htmlpub/core";
+import { AppError, createOpaqueToken, createShareUrls, normalizeSlug, sha256, type BlobMetadata, type DocumentSummary, type PendingUpload, type PublishRepository, type PublishRequest, type PublishResult, type ShareResult } from "@htmlpub/core";
 import type { HtmlpubDb } from "./client";
 import { accounts, apiTokens, collections, documents, documentVersions, shareLinks, uploadSessions } from "./schema";
 
@@ -215,6 +215,20 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
       const currentVersion = versions.find((version) => version.id === document.currentVersionId);
       if (!currentVersion) throw new AppError("version_unavailable", "Current version could not be resolved", 500);
       return { ...document, currentVersion: currentVersion.versionNumber, shared: Boolean(document.shared), updatedAt: document.updatedAt.toISOString(), versions: versions.map((version) => ({ ...version, createdAt: version.createdAt.toISOString() })) };
+    },
+
+    async ensureShare(ownerId: string, slug: string): Promise<ShareResult | null> {
+      const [document] = await db.select({ id: documents.id }).from(documents)
+        .where(and(eq(documents.ownerId, ownerId), eq(documents.slug, slug), isNull(documents.archivedAt), isNotNull(documents.currentVersionId))).limit(1);
+      if (!document) throw new AppError("document_not_found", "Document not found", 404);
+
+      const [active] = await db.select({ id: shareLinks.id }).from(shareLinks)
+        .where(and(eq(shareLinks.documentId, document.id), isNull(shareLinks.revokedAt))).limit(1);
+      if (active) return null;
+
+      const created = createOpaqueToken("share");
+      const [inserted] = await db.insert(shareLinks).values({ documentId: document.id, tokenHash: created.hash }).onConflictDoNothing().returning({ id: shareLinks.id });
+      return inserted ? createShareUrls(origin, created.token) : null;
     },
 
     async getVersion(versionId: string) {
