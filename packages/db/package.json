@@ -15,10 +15,13 @@
   "dependencies": {
     "@htmlpub/core": "workspace:*",
     "@neondatabase/serverless": "^1.1.0",
-    "drizzle-orm": "^0.45.2"
+    "bufferutil": "^4.1.0",
+    "drizzle-orm": "^0.45.2",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
+    "@types/ws": "^8.18.1",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "typescript": "~6.0.3"
