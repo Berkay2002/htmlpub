@@ -1,58 +1,80 @@
 "use client";
 
-import { Archive, Check, Copy, RotateCcw, Share2, Unlink } from "lucide-react";
+import { Archive, Copy, RotateCcw, Share2, Unlink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { readApi } from "@/lib/client-api";
+import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle } from "@htmlpub/ui/components/alert-dialog";
+import { Alert, AlertDescription } from "@htmlpub/ui/components/alert";
 import { Button } from "@htmlpub/ui/components/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@htmlpub/ui/components/card";
 import { Spinner } from "@htmlpub/ui/components/spinner";
 
 export function DocumentActions({ slug, shared }: { slug: string; shared: boolean }) {
   const router = useRouter();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   async function rotate() {
+    setBusy("share");
     try {
       const result = await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/share`, { method: "POST" }));
-      setShareUrl(result.url); setMessage("A new share link was created. The previous link no longer works."); router.refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Sharing failed"); }
+      setShareUrl(result.url); toast.success(shared ? "Share link rotated" : "Share link created"); router.refresh();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Sharing failed"); }
+    finally { setBusy(null); }
   }
 
   async function revoke() {
+    setBusy("revoke");
     try {
       await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/share`, { method: "DELETE" }));
-      setShareUrl(null); setMessage("Share access revoked."); router.refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Revocation failed"); }
+      setShareUrl(null); toast.success("Share access revoked"); router.refresh();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Revocation failed"); }
+    finally { setBusy(null); }
   }
 
   async function archive() {
-    if (!window.confirm("Archive this document and revoke its active share link?")) return;
+    setBusy("archive");
     try {
       await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}`, { method: "DELETE" }));
-      router.push("/dashboard");
-      router.refresh();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Archiving failed");
-    }
+      toast.success("Document archived"); router.push("/dashboard"); router.refresh();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Archiving failed"); }
+    finally { setBusy(null); setArchiving(false); }
+  }
+
+  async function copy(value: string) {
+    await navigator.clipboard.writeText(value);
+    toast.success("Share link copied");
   }
 
   return (
-    <section className="sharing-section" id="sharing">
-      <div><h2>Sharing</h2><p>Share links always open the latest version and remain valid until revoked or rotated.</p></div>
-      <div className="sharing-controls">
-        <Button onPress={() => void rotate()}><Share2 data-icon="inline-start" />{shared ? "Rotate link" : "Create link"}</Button>
-        {shared ? <Button variant="destructive" onPress={() => void revoke()}><Unlink data-icon="inline-start" />Revoke</Button> : null}
-        <Button variant="destructive" onPress={() => void archive()}><Archive data-icon="inline-start" />Archive</Button>
-      </div>
-      {shareUrl ? <div className="share-result"><code>{shareUrl}</code><Button variant="outline" onPress={() => void navigator.clipboard.writeText(shareUrl)}><Copy data-icon="inline-start" />Copy</Button></div> : null}
-      {message ? <p className="action-message"><Check size={15} />{message}</p> : null}
-    </section>
+    <>
+      <Card className="mt-6 rounded-2xl border-border/80 bg-card/95 shadow-sm" id="sharing">
+        <CardHeader className="border-b border-border/70 px-5 py-4"><CardTitle className="text-sm">Sharing</CardTitle><CardDescription className="mt-1 text-xs">Share links always open the latest version and remain valid until revoked or rotated.</CardDescription></CardHeader>
+        <CardContent className="grid gap-4 px-5 py-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center"><Button onPress={() => void rotate()} isDisabled={busy !== null} className="rounded-xl">{busy === "share" ? <Spinner data-icon="inline-start" /> : <Share2 data-icon="inline-start" />}{shared ? "Rotate link" : "Create link"}</Button>{shared ? <Button variant="outline" onPress={() => void revoke()} isDisabled={busy !== null} className="rounded-xl text-destructive hover:text-destructive"><Unlink data-icon="inline-start" />Revoke</Button> : null}<Button variant="ghost" onPress={() => setArchiving(true)} isDisabled={busy !== null} className="rounded-xl text-destructive hover:text-destructive sm:ml-auto"><Archive data-icon="inline-start" />Archive</Button></div>
+          {shareUrl ? <Alert className="rounded-xl border-primary/30 bg-primary/5"><Share2 data-icon="inline-start" /><div className="min-w-0 flex-1"><AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center"><code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-border/80 bg-background px-3 py-2 text-xs">{shareUrl}</code><Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copy(shareUrl)}><Copy data-icon="inline-start" />Copy</Button></AlertDescription></div></Alert> : null}
+        </CardContent>
+      </Card>
+
+      <AlertDialogContent isOpen={archiving} onOpenChange={setArchiving} size="sm">
+        <AlertDialogHeader><AlertDialogMedia><Archive /></AlertDialogMedia><AlertDialogTitle>Archive this document?</AlertDialogTitle><AlertDialogDescription>Archiving removes it from the library and revokes any active share link. This cannot be undone from the workspace.</AlertDialogDescription></AlertDialogHeader>
+        <AlertDialogFooter><AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel><AlertDialogAction className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90" onPress={() => void archive()} isDisabled={busy !== null}>Archive</AlertDialogAction></AlertDialogFooter>
+      </AlertDialogContent>
+    </>
   );
 }
 
 export function RestoreButton({ slug, version }: { slug: string; version: number }) {
-  const router = useRouter(); const [busy, setBusy] = useState(false);
-  async function restore() { setBusy(true); try { await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/versions/${version}/restore`, { method: "POST" })); router.refresh(); } finally { setBusy(false); } }
-  return <Button className="text-button" variant="ghost" size="sm" isDisabled={busy} onPress={() => void restore()}>{busy ? <Spinner data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}{busy ? "Restoring" : "Restore"}</Button>;
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  async function restore() {
+    setBusy(true);
+    try { await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/versions/${version}/restore`, { method: "POST" })); toast.success(`Version ${version} restored`); router.refresh(); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Restore failed"); }
+    finally { setBusy(false); }
+  }
+  return <Button variant="ghost" size="sm" className="rounded-xl" isDisabled={busy} onPress={() => void restore()}>{busy ? <Spinner data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}{busy ? "Restoring" : "Restore"}</Button>;
 }

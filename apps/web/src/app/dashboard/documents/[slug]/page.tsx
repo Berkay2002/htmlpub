@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
+import { ExternalLink, FileCode2 } from "lucide-react";
 import { requireOwnerPage } from "@/lib/auth";
 import { getRepository } from "@/lib/repository";
 import { renderUrl } from "@/lib/render";
 import { DocumentActions, RestoreButton } from "@/components/document-actions";
-import Link from "next/link";
+import { Badge } from "@htmlpub/ui/components/badge";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@htmlpub/ui/components/breadcrumb";
 import { buttonVariants } from "@htmlpub/ui/components/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@htmlpub/ui/components/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@htmlpub/ui/components/table";
 
 type Props = { params: Promise<{ slug: string }> };
 const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
@@ -13,6 +17,27 @@ export default async function DocumentPage({ params }: Props) {
   const [ownerId, { slug }] = await Promise.all([requireOwnerPage(), params]);
   const document = await getRepository().getDocument(ownerId, slug);
   if (!document?.currentVersionId) notFound();
-  const previewUrl = renderUrl(document.currentVersionId);
-  return <div className="document-page"><header className="document-page-header"><div className="typeset typeset-ui"><Link href="/dashboard" className="back-link">Library</Link><h1>{document.title}</h1><p>{document.collection ?? "Unfiled"} · v{document.versionCount} · updated {dateFormatter.format(new Date(document.updatedAt))}</p></div><a className={buttonVariants()} href={previewUrl} target="_blank" rel="noreferrer">Open fullscreen</a></header><div className="preview-frame"><iframe title={document.title} src={previewUrl} sandbox="allow-scripts allow-downloads allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" /></div><DocumentActions slug={document.slug} shared={document.shared} /><section className="versions-section"><h2>Version history</h2><div className="version-list">{document.versions.map((version, index) => <div className="version-row" key={version.id}><div><strong>v{version.versionNumber}{index === 0 ? <em>Current</em> : null}</strong><span>{version.sourceFilename} · {Math.ceil(version.byteSize / 1024)} KB</span></div><time>{dateFormatter.format(new Date(version.createdAt))}</time>{index > 0 ? <RestoreButton slug={document.slug} version={version.versionNumber} /> : <span />}</div>)}</div></section></div>;
+  const previewUrl = renderUrl(document.currentVersionId, "reader");
+
+  return (
+    <section className="flex flex-1 flex-col gap-6 px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <Breadcrumb className="mb-4"><BreadcrumbList><BreadcrumbItem><BreadcrumbLink href="/dashboard">Library</BreadcrumbLink></BreadcrumbItem><BreadcrumbItem><BreadcrumbPage>{document.title}</BreadcrumbPage></BreadcrumbItem></BreadcrumbList></Breadcrumb>
+          <div className="flex items-start gap-3"><span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileCode2 /></span><div className="min-w-0"><h1 className="truncate text-3xl font-semibold tracking-tight sm:text-4xl">{document.title}</h1><p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><Badge variant="outline" className="rounded-lg font-normal">{document.collection ?? "Unfiled"}</Badge><span>•</span><span>v{document.versionCount}</span><span>•</span><span>updated {dateFormatter.format(new Date(document.updatedAt))}</span></p></div></div>
+        </div>
+        <a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={previewUrl} target="_blank" rel="noreferrer"><ExternalLink data-icon="inline-start" />Open fullscreen</a>
+      </header>
+
+      <div className="document-preview"><iframe title={document.title} src={previewUrl} sandbox="allow-scripts allow-downloads allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" /></div>
+      <DocumentActions slug={document.slug} shared={document.shared} />
+
+      <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
+        <CardHeader className="border-b border-border/70 px-5 py-4"><CardTitle className="text-sm">Version history</CardTitle><CardDescription className="mt-1 text-xs">Every publish creates an immutable version. Restore creates a new current version.</CardDescription></CardHeader>
+        <CardContent className="p-0">
+          <Table aria-label="Version history"><TableHeader><TableRow className="border-border/70 bg-muted/35 hover:bg-muted/35"><TableHead className="px-5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Version</TableHead><TableHead className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Source file</TableHead><TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:table-cell">Published</TableHead><TableHead className="px-5 text-right text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Action</TableHead></TableRow></TableHeader><TableBody>{document.versions.map((version, index) => <TableRow key={version.id} className="border-border/60"><TableCell className="px-5"><div className="flex items-center gap-2"><span className="font-semibold">v{version.versionNumber}</span>{index === 0 ? <Badge variant="secondary" className="rounded-lg text-[10px]">Current</Badge> : null}</div></TableCell><TableCell><span className="mono-meta text-muted-foreground">{version.sourceFilename}</span><span className="mt-1 block text-xs text-muted-foreground">{Math.ceil(version.byteSize / 1024)} KB</span></TableCell><TableCell className="hidden text-xs text-muted-foreground sm:table-cell">{dateFormatter.format(new Date(version.createdAt))}</TableCell><TableCell className="px-5 text-right">{index > 0 ? <RestoreButton slug={document.slug} version={version.versionNumber} /> : <span className="text-xs text-muted-foreground">Current</span>}</TableCell></TableRow>)}</TableBody></Table>
+        </CardContent>
+      </Card>
+    </section>
+  );
 }

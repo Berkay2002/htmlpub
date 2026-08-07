@@ -13,6 +13,7 @@ describe("the renderer response boundary", () => {
     const headers = new Headers(rendererHeaders("https://app.example.com"));
     expect(headers.get("referrer-policy")).toBe("no-referrer");
     expect(headers.get("content-security-policy")).toContain("frame-ancestors https://app.example.com");
+    expect(headers.get("content-security-policy")).toContain("style-src 'unsafe-inline' 'self' https:");
     expect(headers.get("content-security-policy")).toContain("form-action 'none'");
   });
 

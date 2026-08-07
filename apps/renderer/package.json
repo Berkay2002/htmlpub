@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node ../../scripts/sync-typeset.mjs",
     "dev": "next dev --port 3001",
+    "prebuild": "node ../../scripts/sync-typeset.mjs",
     "build": "next build",
+    "sync:typeset": "node ../../scripts/sync-typeset.mjs",
     "start": "next start --port 3001",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

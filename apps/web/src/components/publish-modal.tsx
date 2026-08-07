@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@htmlpub/ui/components/alert";
 import { Button, buttonVariants } from "@htmlpub/ui/components/button";
 import { Checkbox } from "@htmlpub/ui/components/checkbox";
 import { Dialog, DialogClose, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@htmlpub/ui/components/dialog";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@htmlpub/ui/components/empty";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@htmlpub/ui/components/field";
 import { Input } from "@htmlpub/ui/components/input";
 import { Progress } from "@htmlpub/ui/components/progress";
@@ -34,8 +35,7 @@ export function PublishModal({ onClose }: Props) {
   const busy = progress > 0 && progress < 100;
 
   async function choose(next: File | null) {
-    setError(null);
-    setResult(null);
+    setError(null); setResult(null);
     if (!next) return setFile(null);
     if (!next.name.toLowerCase().endsWith(".html")) return setError("Choose a file with the .html extension.");
     if (next.size <= 0 || next.size > MAX_HTML_BYTES) return setError("HTML files must be between 1 byte and 10 MB.");
@@ -43,35 +43,20 @@ export function PublishModal({ onClose }: Props) {
       const text = new TextDecoder("utf-8", { fatal: true }).decode(await next.arrayBuffer());
       setFile(next);
       const parsedTitle = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim();
-      setTitle(parsedTitle || next.name.replace(/\.html$/i, ""));
-      setSlug(normalizeSlug(next.name));
-    } catch {
-      setError("The selected file is not valid UTF-8 HTML.");
-    }
+      setTitle(parsedTitle || next.name.replace(/\.html$/i, "")); setSlug(normalizeSlug(next.name));
+    } catch { setError("The selected file is not valid UTF-8 HTML."); }
   }
 
   async function publish() {
     if (!file) return setError("Choose an HTML file first.");
-    setError(null);
-    setProgress(12);
+    setError(null); setProgress(12);
     try {
-      const bytes = await file.arrayBuffer();
-      const hash = await sha256Hex(bytes);
-      const started = await readApi<StartUploadResult>(await fetch("/api/v1/uploads", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ slug: normalizeSlug(slug), title, ...(collection.trim() ? { collection: collection.trim() } : {}), byteSize: file.size, sha256: hash, filename: file.name })
-      }));
+      const bytes = await file.arrayBuffer(); const hash = await sha256Hex(bytes);
+      const started = await readApi<StartUploadResult>(await fetch("/api/v1/uploads", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug: normalizeSlug(slug), title, ...(collection.trim() ? { collection: collection.trim() } : {}), byteSize: file.size, sha256: hash, filename: file.name }) }));
       if (started.status === "duplicate") {
         let shareUrl: string | null = null;
-        if (share) {
-          const shared = await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(started.result.slug)}/share`, { method: "POST" }));
-          shareUrl = shared.url;
-        }
-        setResult({ ...started.result, shareUrl });
-        setProgress(100);
-        router.refresh();
-        return;
+        if (share) shareUrl = (await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(started.result.slug)}/share`, { method: "POST" }))).url;
+        setResult({ ...started.result, shareUrl }); setProgress(100); router.refresh(); return;
       }
       setProgress(42);
       const uploadResponse = await fetch(started.uploadUrl, { method: "PUT", headers: { "content-type": "text/html" }, body: bytes });
@@ -79,37 +64,35 @@ export function PublishModal({ onClose }: Props) {
       setProgress(82);
       const completed = await readApi<PublishResult>(await fetch(`/api/v1/uploads/${started.uploadId}/complete`, { method: "POST" }));
       let shareUrl: string | null = null;
-      if (share) {
-        const shared = await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(completed.slug)}/share`, { method: "POST" }));
-        shareUrl = shared.url;
-      }
-      setResult({ ...completed, shareUrl });
-      setProgress(100);
-      router.refresh();
-    } catch (cause) {
-      setProgress(0);
-      setError(cause instanceof Error ? cause.message : "Publishing failed");
-    }
+      if (share) shareUrl = (await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(completed.slug)}/share`, { method: "POST" }))).url;
+      setResult({ ...completed, shareUrl }); setProgress(100); router.refresh();
+    } catch (cause) { setProgress(0); setError(cause instanceof Error ? cause.message : "Publishing failed"); }
   }
 
   return (
-    <Dialog isOpen isDismissable={!busy} onOpenChange={(open) => { if (!open && !busy) onClose(); }} showCloseButton={false} className="publish-modal">
-        <DialogHeader className="modal-heading"><div><DialogTitle>Publish HTML</DialogTitle><DialogDescription>Upload a self-contained HTML file.</DialogDescription></div><DialogClose className="icon-button" aria-label="Close" isDisabled={busy}><X /></DialogClose></DialogHeader>
-        {result ? (
-          <div className="publish-success"><span className="success-icon"><Check /></span><h3>{result.duplicate ? "Already up to date" : `Published version ${result.version}`}</h3><p>The stable document URL is ready.</p><div className="success-actions"><a className={buttonVariants()} href={result.dashboardUrl}>Open document</a>{result.shareUrl ? <a className={buttonVariants({ variant: "outline" })} href={result.shareUrl} target="_blank" rel="noreferrer">Open share link</a> : null}</div></div>
-        ) : (
-          <>
-            <label className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void choose(event.dataTransfer.files[0] ?? null); }}>
-              <UploadCloud aria-hidden="true" /><strong>Drop an .html file here</strong><span>or choose a file</span><input type="file" accept=".html,text/html" onChange={(event) => void choose(event.target.files?.[0] ?? null)} />
+    <Dialog isOpen isDismissable={!busy} onOpenChange={(open) => { if (!open && !busy) onClose(); }} showCloseButton={false} className="max-w-xl rounded-2xl border-border/80 bg-card p-0 shadow-2xl">
+      <DialogHeader className="flex flex-row items-start justify-between gap-4 border-b border-border/70 px-6 py-5"><div><DialogTitle className="text-base font-semibold">Publish HTML</DialogTitle><DialogDescription className="mt-1 text-xs">Upload a self-contained artifact to your private workspace.</DialogDescription></div><DialogClose className="rounded-xl" variant="ghost" size="icon-sm" aria-label="Close" isDisabled={busy}><X /></DialogClose></DialogHeader>
+      {result ? (
+        <div className="px-6 py-8"><Empty className="min-h-72 border-0"><EmptyHeader><EmptyMedia variant="icon" className="bg-emerald-500/10 text-emerald-600"><Check /></EmptyMedia><EmptyTitle>{result.duplicate ? "Already up to date" : `Published version ${result.version}`}</EmptyTitle><EmptyDescription>The stable document URL is ready.</EmptyDescription></EmptyHeader><div className="flex flex-col gap-2 sm:flex-row"><a className={`${buttonVariants({ size: "sm" })} rounded-xl`} href={result.dashboardUrl}>Open document</a>{result.shareUrl ? <a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={result.shareUrl} target="_blank" rel="noreferrer">Open share link</a> : null}</div></Empty></div>
+      ) : (
+        <>
+          <div className="px-6 py-5">
+            <label className="group flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/[0.03] px-6 text-center transition-colors hover:border-primary hover:bg-primary/[0.06]" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void choose(event.dataTransfer.files[0] ?? null); }}>
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-105"><UploadCloud /></span><strong className="text-sm font-semibold">Drop an .html file here</strong><span className="text-xs text-primary">or choose a file</span><input className="sr-only" type="file" accept=".html,text/html" onChange={(event) => void choose(event.target.files?.[0] ?? null)} />
             </label>
-            {file ? <div className="selected-file"><FileCode2 aria-hidden="true" /><div><strong>{file.name}</strong><span>{Math.ceil(file.size / 1024)} KB</span></div><Button className="text-button" variant="ghost" size="sm" onPress={() => void choose(null)} isDisabled={busy}>Remove</Button>{progress > 0 ? <Progress value={progress} aria-label="Upload progress" className="upload-progress" /> : null}</div> : null}
-            <p className="constraint">UTF-8 HTML, up to 10 MB</p>
-            <FieldGroup className="field-grid"><Field><FieldLabel htmlFor="publish-title">Title</FieldLabel><Input id="publish-title" value={title} onChange={(event) => setTitle(event.target.value)} /></Field><Field><FieldLabel htmlFor="publish-slug">Slug</FieldLabel><Input id="publish-slug" value={slug} onChange={(event) => setSlug(event.target.value)} /><FieldDescription>Used in the stable document URL.</FieldDescription></Field><Field><FieldLabel htmlFor="publish-collection">Collection</FieldLabel><Input id="publish-collection" value={collection} onChange={(event) => setCollection(event.target.value)} placeholder="Optional" /></Field></FieldGroup>
-            <Checkbox className="checkbox-row" isSelected={share} onChange={setShare}><span><strong>Create a share link</strong><small>Anyone with the link can view the latest version.</small></span></Checkbox>
-            {error ? <Alert variant="destructive" className="form-error"><AlertDescription>{error}</AlertDescription></Alert> : null}
-            <DialogFooter className="modal-actions"><Button variant="outline" onPress={onClose} isDisabled={busy}>Cancel</Button><Button onPress={() => void publish()} isDisabled={!file || !title.trim() || !slug.trim() || busy}>{busy ? <><Spinner data-icon="inline-start" />Uploading {progress}%</> : "Publish"}</Button></DialogFooter>
-          </>
-        )}
+            {file ? <div className="relative mt-3 flex items-center gap-3 rounded-xl border border-border/80 bg-muted/30 p-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background text-primary"><FileCode2 /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{file.name}</p><p className="mono-meta mt-1 text-muted-foreground">{Math.ceil(file.size / 1024)} KB</p></div><Button variant="ghost" size="sm" className="rounded-xl" onPress={() => void choose(null)} isDisabled={busy}>Remove</Button>{progress > 0 ? <Progress value={progress} aria-label="Upload progress" className="absolute right-3 bottom-1 left-3 h-1" /> : null}</div> : null}
+            <p className="mt-3 text-xs text-muted-foreground">UTF-8 HTML, up to 10 MB.</p>
+            <FieldGroup className="mt-5">
+              <Field><FieldLabel htmlFor="publish-title">Title</FieldLabel><Input id="publish-title" value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
+              <Field><FieldLabel htmlFor="publish-slug">Slug</FieldLabel><Input id="publish-slug" value={slug} onChange={(event) => setSlug(event.target.value)} /><FieldDescription>Used in the stable document URL.</FieldDescription></Field>
+              <Field><FieldLabel htmlFor="publish-collection">Collection</FieldLabel><Input id="publish-collection" value={collection} onChange={(event) => setCollection(event.target.value)} placeholder="Optional" /></Field>
+            </FieldGroup>
+            <Checkbox className="mt-5 flex items-start gap-3 rounded-xl border border-border/70 p-3" isSelected={share} onChange={setShare}><span><strong className="block text-sm font-medium">Create a share link</strong><small className="mt-1 block text-xs text-muted-foreground">Anyone with the link can view the latest version.</small></span></Checkbox>
+            {error ? <Alert variant="destructive" className="mt-4 rounded-xl"><AlertDescription>{error}</AlertDescription></Alert> : null}
+          </div>
+          <DialogFooter className="border-t border-border/70 bg-muted/20 px-6 py-4"><Button variant="outline" className="rounded-xl" onPress={onClose} isDisabled={busy}>Cancel</Button><Button className="rounded-xl" onPress={() => void publish()} isDisabled={!file || !title.trim() || !slug.trim() || busy}>{busy ? <><Spinner data-icon="inline-start" />Uploading {progress}%</> : "Publish"}</Button></DialogFooter>
+        </>
+      )}
     </Dialog>
   );
 }

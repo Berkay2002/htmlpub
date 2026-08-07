@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "./typeset.css";
 
+.typeset-docs {
+  --typeset-font-body: var(--font-jetbrains-mono);
+  --typeset-font-heading: var(--font-jetbrains-mono);
+  --typeset-font-mono: var(--font-jetbrains-mono);
+  --typeset-size: 16px;
+  --typeset-leading: 1.75;
+  --typeset-flow: 1.25em;
+}
+
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
@@ -23,7 +32,20 @@
   --border: #dde2ea;
   --input: #cbd3df;
   --ring: #155eef;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
+  --sidebar: #061a33;
+  --sidebar-foreground: #e5eefb;
+  --sidebar-primary: #2f7dff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0d2c52;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #17385f;
+  --sidebar-ring: #6aa4ff;
+  --chart-1: #2f7dff;
+  --chart-2: #1aa36f;
+  --chart-3: #e7a426;
+  --chart-4: #8b5cf6;
+  --chart-5: #ef6a6a;
 }
 
 @theme inline {
@@ -45,6 +67,19 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

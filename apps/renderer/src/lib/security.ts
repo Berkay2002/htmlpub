@@ -10,7 +10,7 @@ export function rendererHeaders(appOrigin = process.env.APP_ORIGIN ?? "http://lo
       `sandbox ${sandbox}`,
       "default-src 'none'",
       "script-src 'unsafe-inline' 'unsafe-eval' https: blob:",
-      "style-src 'unsafe-inline' https:",
+      "style-src 'unsafe-inline' 'self' https:",
       "img-src https: data: blob:",
       "font-src https: data:",
       "media-src https: data: blob:",
