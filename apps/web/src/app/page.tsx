@@ -18,7 +18,6 @@ export default function HomePage() {
 
       <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-16 sm:px-8 md:pb-24 md:pt-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)] lg:px-10 lg:pt-28">
         <div className="typeset typeset-ui max-w-2xl">
-          <Badge variant="outline" className="mb-5 rounded-lg border-sidebar-border bg-sidebar-accent/60 text-sidebar-foreground">Private HTML publishing</Badge>
           <h1 className="max-w-xl text-5xl font-semibold leading-[0.98] tracking-[-0.065em] text-sidebar-foreground sm:text-7xl">Publish once. Keep the whole story.</h1>
           <p className="mt-6 max-w-lg text-base leading-7 text-sidebar-foreground/70 sm:text-lg">Ship self-contained HTML, preserve every version, and share interactive work through links you can rotate or revoke.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Show when="signed-out"><SignUpButton><Button size="lg" className="rounded-xl">Create owner account<ArrowUpRight data-icon="inline-end" /></Button></SignUpButton></Show><Show when="signed-in"><Link href="/dashboard"><Button size="lg" className="rounded-xl">Open workspace<ArrowUpRight data-icon="inline-end" /></Button></Link></Show><Link href="/sign-in"><Button size="lg" variant="outline" className="rounded-xl border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground">See the workspace</Button></Link></div>

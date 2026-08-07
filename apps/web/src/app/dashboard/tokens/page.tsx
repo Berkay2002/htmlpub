@@ -17,7 +17,7 @@ export default async function TokensPage() {
       </header>
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm"><CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0"><CardTitle className="text-sm">CLI authentication</CardTitle><TerminalSquare className="text-primary" /></CardHeader><CardContent className="text-xs text-muted-foreground">Use the token as a bearer credential when publishing from a terminal.</CardContent></Card>
-        <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm"><CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0"><CardTitle className="text-sm">Token inventory</CardTitle><KeyRound className="text-violet-600" /></CardHeader><CardContent className="flex items-center gap-2 text-xs text-muted-foreground"><Badge variant="secondary" className="rounded-lg">{tokens.length}</Badge>{tokens.length === 1 ? "token configured" : "tokens configured"}</CardContent></Card>
+        <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm"><CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0"><CardTitle className="text-sm">Token inventory</CardTitle><KeyRound className="text-muted-foreground" /></CardHeader><CardContent className="flex items-center gap-2 text-xs text-muted-foreground"><Badge variant="secondary" className="rounded-lg">{tokens.length}</Badge>{tokens.length === 1 ? "token configured" : "tokens configured"}</CardContent></Card>
       </div>
       <TokenManager initial={tokens} />
     </section>

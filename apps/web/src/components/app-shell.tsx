@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Show, UserButton } from "@clerk/nextjs";
-import { Braces, FileCode2, FolderKanban, KeyRound, UploadCloud } from "lucide-react";
+import { FileCode2, FolderKanban, KeyRound, UploadCloud } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Toaster } from "@htmlpub/ui/components/sonner";
 import { Button } from "@htmlpub/ui/components/button";
@@ -13,14 +13,12 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
-  SidebarSeparator,
   SidebarTrigger,
 } from "@htmlpub/ui/components/sidebar";
 import { PublishModal } from "./publish-modal";
@@ -42,21 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen>
-      <Sidebar collapsible="icon" className="border-sidebar-border">
-        <SidebarHeader className="p-3">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton href="/dashboard" size="lg" tooltip="htmlpub" className="group-data-[collapsible=icon]:justify-center">
-                <Braces data-icon="inline-start" className="text-sidebar-primary" />
-                <span className="app-mark text-lg font-semibold tracking-tight">htmlpub</span>
-                <span className="mono-meta text-sidebar-primary">/</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-
-        <SidebarSeparator />
-
+      <Sidebar variant="inset" collapsible="icon" className="border-sidebar-border">
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
@@ -100,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset className="bg-app-grid">
+      <SidebarInset className="overflow-hidden bg-background">
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border/80 bg-background/95 px-4 backdrop-blur lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger />

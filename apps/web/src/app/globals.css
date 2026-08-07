@@ -4,7 +4,6 @@
   --font-body: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-heading: "Arial Narrow", "Aptos Display", ui-sans-serif, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "SFMono-Regular", Consolas, monospace;
-  --app-grid: color-mix(in srgb, var(--border) 52%, transparent);
 }
 
 * { box-sizing: border-box; }
@@ -31,11 +30,6 @@ code, kbd, pre { font-family: var(--font-mono); }
 
 .bg-app-grid {
   background-color: var(--background);
-  background-image:
-    linear-gradient(to right, var(--app-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--app-grid) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position: -1px -1px;
 }
 
 .app-mark {
@@ -99,7 +93,6 @@ code, kbd, pre { font-family: var(--font-mono); }
 }
 
 @media (max-width: 767px) {
-  .bg-app-grid { background-size: 24px 24px; }
   .document-preview, .document-preview iframe { min-height: 58vh; height: 58vh; }
 }
 

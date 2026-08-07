@@ -13,12 +13,12 @@ const chartConfig = {
   documents: { label: "Updated documents", color: "var(--color-chart-1)" },
 } satisfies ChartConfig;
 
-function StatCard({ title, value, description, icon: Icon, accent }: { title: string; value: string; description: string; icon: typeof FileCode2; accent?: string }) {
+function StatCard({ title, value, description, icon: Icon }: { title: string; value: string; description: string; icon: typeof FileCode2 }) {
   return (
     <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
         <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">{title}</CardDescription>
-        <span className={`flex size-8 items-center justify-center rounded-xl bg-muted text-muted-foreground ${accent ?? ""}`}><Icon /></span>
+        <span className="flex size-8 items-center justify-center rounded-xl bg-muted text-muted-foreground"><Icon /></span>
       </CardHeader>
       <CardContent>
         <p className="text-2xl font-semibold tracking-tight">{value}</p>
@@ -35,10 +35,10 @@ export function WorkspaceOverview({ documents, collections, tokens, activity }: 
   return (
     <div className="@container/main flex flex-col gap-5 md:gap-6">
       <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        <StatCard title="Documents" value={documents.length.toString()} description="Published and active" icon={FileCode2} accent="text-primary" />
-        <StatCard title="Versions" value={versions.toString()} description="Across the workspace" icon={TrendingUp} accent="text-violet-600" />
-        <StatCard title="Public links" value={shared.toString()} description="Active share access" icon={Globe2} accent="text-emerald-600" />
-        <StatCard title="Collections" value={collections.toString()} description={`${tokens} API ${tokens === 1 ? "token" : "tokens"} configured`} icon={FolderKanban} accent="text-amber-600" />
+        <StatCard title="Documents" value={documents.length.toString()} description="Published and active" icon={FileCode2} />
+        <StatCard title="Versions" value={versions.toString()} description="Across the workspace" icon={TrendingUp} />
+        <StatCard title="Public links" value={shared.toString()} description="Active share access" icon={Globe2} />
+        <StatCard title="Collections" value={collections.toString()} description={`${tokens} API ${tokens === 1 ? "token" : "tokens"} configured`} icon={FolderKanban} />
       </div>
 
       <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
