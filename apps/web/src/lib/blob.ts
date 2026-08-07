@@ -1,4 +1,4 @@
-import { del, head, issueSignedToken, presignUrl } from "@vercel/blob";
+import { del, get, issueSignedToken, presignUrl } from "@vercel/blob";
 import type { BlobGateway } from "@htmlpub/core";
 
 export function createBlobGateway(): BlobGateway {
@@ -14,19 +14,16 @@ export function createBlobGateway(): BlobGateway {
       return presignedUrl;
     },
     async inspect(pathname) {
-      try {
-        const metadata = await head(pathname);
-        return {
-          pathname: metadata.pathname,
-          contentType: metadata.contentType,
-          size: metadata.size,
-          etag: metadata.etag,
-          url: metadata.url
-        };
-      } catch (error) {
-        if (error instanceof Error && /not found/i.test(error.message)) return null;
-        throw error;
-      }
+      const result = await get(pathname, { access: "private", useCache: false });
+      if (!result || result.statusCode !== 200) return null;
+      await result.stream.cancel();
+      return {
+        pathname: result.blob.pathname,
+        contentType: result.blob.contentType,
+        size: result.blob.size,
+        etag: result.blob.etag,
+        url: result.blob.url
+      };
     },
     async remove(pathnames) {
       if (pathnames.length > 0) await del(pathnames);
