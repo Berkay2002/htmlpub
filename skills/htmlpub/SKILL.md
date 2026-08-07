@@ -1,6 +1,6 @@
 ---
 name: htmlpub
-description: Route htmlpub CLI work to the repository's plugin skills. Use when Codex needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader and raw-content links, retrieve shared HTML, or manage document versions.
+description: Route htmlpub CLI work to this plugin's skills. Use when Claude Code needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader and raw-content links, retrieve shared HTML, or manage document versions.
 ---
 
 # htmlpub workflow
@@ -12,8 +12,8 @@ Use the canonical plugin instructions carried by this repository:
 
 Verify the command and configuration first:
 
-```bash
-htmlpub --help
+```powershell
+Get-Command htmlpub
 htmlpub --json doctor
 ```
 
@@ -21,15 +21,15 @@ Authentication comes from `HTMLPUB_TOKEN` or `htmlpub auth login`. Never print t
 
 For a normal publish:
 
-```bash
-htmlpub --json publish ./report.html --type report --dry-run
-htmlpub --json publish ./report.html --type report
+```powershell
+htmlpub --json publish .\report.html --type report --dry-run
+htmlpub --json publish .\report.html --type report
 htmlpub --json documents get report
 ```
 
 Discover documents before changing sharing:
 
-```bash
+```powershell
 htmlpub --json documents list --limit 20
 htmlpub --json share report --dry-run
 htmlpub --json share report

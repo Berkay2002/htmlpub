@@ -1,0 +1,4 @@
+interface:
+  display_name: "Publish HTML Artifacts"
+  short_description: "Publish agent reports with the htmlpub CLI"
+  default_prompt: "Use $publish-html-artifacts to publish this HTML summary to my htmlpub workspace."

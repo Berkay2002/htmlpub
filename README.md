@@ -53,20 +53,52 @@ POST /api/v1/uploads/{uploadId}/complete
 
 Upload initiation validates a UTF-8 `.html` file declaration, creates an expiring session, and returns a ten-minute Blob URL restricted to one immutable pathname, `text/html`, and the declared size. Completion inspects Blob metadata before transactionally allocating the next version number. Repeating completion is idempotent.
 
-Share tokens are 256-bit bearer secrets stored only as SHA-256 hashes. Creating a new link revokes the previous link because the original secret cannot be recovered. A share page resolves the current version and sends only a five-minute render ticket to the renderer.
+Share tokens are 256-bit bearer secrets stored only as SHA-256 hashes. Creating a new link revokes the previous link because the original secret cannot be recovered. A share page and its stable `/raw` content URL resolve the current version and send only a five-minute render ticket to the isolated renderer.
 
 ## CLI
 
 ```bash
 pnpm --filter @htmlpub/cli build
-pnpm --filter @htmlpub/cli link --global
+cd packages/cli
+npm link
 htmlpub --json doctor
 htmlpub auth login --endpoint https://your-web-project.vercel.app
-htmlpub publish ./report.html --collection Planning
+htmlpub --json publish ./summary.html --type summary --dry-run
+htmlpub --json publish ./summary.html --type summary
+htmlpub --json documents get summary
 htmlpub share report
 ```
 
 See [`packages/cli/README.md`](packages/cli/README.md) for the command and JSON contracts.
+
+## Codex plugin
+
+This repository is the plugin root. Its manifest is in `.codex-plugin/plugin.json`, its agent workflows are under `skills/`, and `.agents/plugins/marketplace.json` points Codex at this GitHub repository. The plugin exposes separate skills for publishing artifacts and managing the HTML library.
+
+Share creation returns a human reader `url` and a public raw `contentUrl`. The raw link lets another agent retrieve the latest HTML without an htmlpub account or API token. Both are bearer links and remain valid until revoked or rotated.
+
+## Claude Code plugin
+
+This repository is also a Claude Code plugin. From the repository root, load it for a local
+session with:
+
+```bash
+claude --plugin-dir .
+```
+
+The plugin exposes these namespaced skills:
+
+```text
+/htmlpub:htmlpub
+/htmlpub:publish-html-artifacts
+/htmlpub:manage-html-library
+```
+
+Validate the plugin before distributing it:
+
+```bash
+claude plugin validate . --strict
+```
 
 ## Verification
 

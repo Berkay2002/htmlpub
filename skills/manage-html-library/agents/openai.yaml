@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage HTML Library"
+  short_description: "Inspect and manage published htmlpub documents"
+  default_prompt: "Use $manage-html-library to list the HTML documents in my htmlpub workspace."

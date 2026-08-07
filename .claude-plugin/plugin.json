@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "htmlpub",
+  "displayName": "htmlpub",
+  "version": "0.1.0",
+  "description": "Publish and manage self-contained HTML summaries, plans, reviews, and reports with the htmlpub CLI.",
+  "author": {
+    "name": "Berkay2002",
+    "url": "https://github.com/Berkay2002"
+  },
+  "homepage": "https://github.com/Berkay2002/htmlpub",
+  "repository": "https://github.com/Berkay2002/htmlpub",
+  "license": "MIT",
+  "keywords": ["html", "publishing", "reports", "cli"],
+  "skills": "./skills/"
+}
