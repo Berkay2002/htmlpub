@@ -10,7 +10,12 @@ export function createBlobGateway(): BlobGateway {
         maximumSizeInBytes,
         validUntil
       });
-      const { presignedUrl } = await presignUrl(token, { pathname, operation: "put", access: "private", validUntil });
+      const { presignedUrl } = await presignUrl(token, {
+        pathname,
+        operation: "put",
+        validUntil,
+        addRandomSuffix: false
+      });
       return presignedUrl;
     },
     async inspect(pathname) {
