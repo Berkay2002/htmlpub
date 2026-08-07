@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+coverage/
+.turbo/
+.vercel/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+*.tgz
+playwright-report/
+test-results/
+docs/qa/*.png
+!docs/design/*.png

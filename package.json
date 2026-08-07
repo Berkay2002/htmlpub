@@ -1,0 +1,28 @@
+{
+  "name": "htmlpub-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.5.1",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @htmlpub/core build && pnpm --filter @htmlpub/db build && pnpm --filter @htmlpub/cli build && pnpm --filter @htmlpub/web build && pnpm --filter @htmlpub/renderer build",
+    "dev": "pnpm --parallel --filter @htmlpub/web --filter @htmlpub/renderer dev",
+    "dev:web": "pnpm --filter @htmlpub/web dev",
+    "dev:renderer": "pnpm --filter @htmlpub/renderer dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm --filter @htmlpub/web lint && pnpm --filter @htmlpub/renderer lint",
+    "verify": "pnpm test && pnpm typecheck && pnpm lint && pnpm build && pnpm --filter @htmlpub/cli pack:check",
+    "db:generate": "pnpm --filter @htmlpub/db db:generate",
+    "db:migrate": "pnpm --filter @htmlpub/db db:migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

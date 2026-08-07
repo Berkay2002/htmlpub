@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive report example</title>
+  <style>
+    body { max-width: 760px; margin: 0 auto; padding: 64px 24px; color: #101828; font: 16px/1.6 system-ui, sans-serif; }
+    h1 { font-size: 48px; line-height: 1; letter-spacing: -.05em; }
+    button { padding: 10px 14px; border: 1px solid #cbd3df; border-radius: 8px; background: white; cursor: pointer; }
+    output { display: block; margin-top: 18px; color: #155eef; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>Interactive report</h1>
+  <p>This file proves that inline styles and scripts survive the publishing boundary.</p>
+  <button id="increment">Increment</button>
+  <output id="count">0</output>
+  <script>
+    let count = 0;
+    document.querySelector("#increment").addEventListener("click", () => {
+      document.querySelector("#count").value = String(++count);
+    });
+  </script>
+</body>
+</html>

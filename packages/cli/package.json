@@ -1,0 +1,29 @@
+{
+  "name": "@htmlpub/cli",
+  "version": "0.1.0",
+  "description": "Publish, version, and share self-contained HTML reports.",
+  "type": "module",
+  "bin": {
+    "htmlpub": "dist/index.js"
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "pack:check": "npm pack --dry-run --json"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "open": "^11.0.0"
+  },
+  "devDependencies": {
+    "@htmlpub/core": "workspace:*",
+    "@types/node": "^24.10.0",
+    "tsup": "^8.5.1",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": { "node": ">=20.9.0" },
+  "license": "MIT",
+  "publishConfig": { "access": "public" }
+}
