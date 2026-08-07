@@ -157,7 +157,15 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
 
     async listDocuments(ownerId: string, input: { search?: string; collection?: string; limit?: number; offset?: number } = {}): Promise<DocumentSummary[]> {
       const conditions = [eq(documents.ownerId, ownerId), isNull(documents.archivedAt), isNotNull(documents.currentVersionId)];
-      if (input.search) conditions.push(or(ilike(documents.title, `%${input.search}%`), ilike(documents.slug, `%${input.search}%`))!);
+      if (input.search) {
+        const search = `%${input.search}%`;
+        conditions.push(or(
+          ilike(documents.title, search),
+          ilike(documents.slug, search),
+          ilike(documentVersions.sourceFilename, search),
+          ilike(collections.name, search)
+        )!);
+      }
       if (input.collection) conditions.push(eq(collections.slug, input.collection));
       const rows = await db.select({
         id: documents.id,

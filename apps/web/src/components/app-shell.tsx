@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Show, UserButton } from "@clerk/nextjs";
 import { Folder, KeyRound, Library, UploadCloud } from "lucide-react";
 import { useCallback, useState } from "react";
 import { PublishModal } from "./publish-modal";
@@ -28,7 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <button className="publish-button" onClick={() => setPublishing(true)}><UploadCloud size={19} />Publish HTML</button>
-        <div className="owner-row"><span className="avatar">ME</span><span>Workspace owner</span></div>
+        <div className="owner-row"><Show when="signed-in"><UserButton /></Show><span>Workspace owner</span></div>
       </aside>
       <div className="workspace">
         <main>{children}</main>
