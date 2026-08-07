@@ -45,6 +45,7 @@ export type DocumentSummary = {
   slug: string;
   title: string;
   collection: string | null;
+  currentVersion: number;
   versionCount: number;
   latestFilename: string | null;
   updatedAt: string;
@@ -53,6 +54,7 @@ export type DocumentSummary = {
 
 export type ShareResult = {
   url: string;
+  markdownUrl: string;
   contentUrl: string;
 };
 

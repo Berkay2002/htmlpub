@@ -11,7 +11,7 @@ export async function POST(request: Request, { params }: Context) {
     const { slug, version } = await params;
     const versionNumber = Number(version);
     if (!Number.isInteger(versionNumber) || versionNumber < 1) throw new AppError("invalid_version", "Version must be a positive integer", 422);
-    return dataResponse(await getRepository().restoreVersion(ownerId, normalizeSlug(slug), versionNumber), { status: 201 });
+    return dataResponse(await getRepository().restoreVersion(ownerId, normalizeSlug(slug), versionNumber));
   } catch (error) {
     return errorResponse(error);
   }

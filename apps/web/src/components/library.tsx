@@ -38,7 +38,7 @@ export function LibraryTable({ documents, selectedSlug }: { documents: DocumentS
           <TableHeader className="border-border/70 bg-muted/35">
             <TableHead isRowHeader className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Document</TableHead>
             <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:table-cell">Collection</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Versions</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Current</TableHead>
             <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:table-cell">Updated</TableHead>
             <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Sharing</TableHead>
             <TableHead className="px-4 text-right text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Actions</TableHead>
@@ -61,7 +61,7 @@ export function LibraryTable({ documents, selectedSlug }: { documents: DocumentS
                     </Link>
                   </TableCell>
                   <TableCell className="hidden md:table-cell"><Badge variant="outline" className="font-normal">{document.collection ?? "Unfiled"}</Badge></TableCell>
-                  <TableCell className="mono-meta text-muted-foreground">v{document.versionCount}</TableCell>
+                  <TableCell className="mono-meta text-muted-foreground">v{document.currentVersion}</TableCell>
                   <TableCell className="hidden whitespace-nowrap text-xs text-muted-foreground sm:table-cell">{dateFormatter.format(new Date(document.updatedAt))}</TableCell>
                   <TableCell className="px-4 sm:px-5">
                     <Badge variant={document.shared ? "secondary" : "outline"} className="gap-1.5 font-normal">
@@ -86,6 +86,8 @@ type Detail = {
   slug: string;
   title: string;
   collection: string | null;
+  currentVersion: number;
+  currentVersionId: string | null;
   versionCount: number;
   updatedAt: string;
   shared: boolean;
@@ -114,11 +116,14 @@ export function DetailPanel({ document }: { document: Detail }) {
 
       <Card className="border-border/70 bg-muted/25 shadow-none">
         <CardHeader className="px-4 pb-3 pt-4">
-          <CardTitle className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Latest version</CardTitle>
+            <CardTitle className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Current version</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <div className="flex items-end justify-between gap-4">
-            <span className="text-2xl font-semibold tracking-tight text-primary">v{document.versionCount}</span>
+            <div>
+              <span className="text-2xl font-semibold tracking-tight text-primary">v{document.currentVersion}</span>
+              <span className="ml-2 text-xs text-muted-foreground">{document.versionCount} total</span>
+            </div>
             <span className="text-right text-xs text-muted-foreground">{dateFormatter.format(new Date(document.updatedAt))}</span>
           </div>
         </CardContent>
@@ -134,19 +139,22 @@ export function DetailPanel({ document }: { document: Detail }) {
         <Link className="text-xs font-medium text-primary hover:underline" href={`/dashboard/documents/${encodeURIComponent(document.slug)}`}>View all</Link>
       </div>
       <ol className="version-rail mt-4 grid gap-0">
-        {document.versions.slice(0, 5).map((version, index) => (
+        {document.versions.slice(0, 5).map((version) => {
+          const current = version.id === document.currentVersionId;
+          return (
           <li key={version.id} className="relative flex gap-3 pb-5 last:pb-0">
-            <span className="version-dot mt-1" data-current={index === 0 ? "true" : "false"} />
+            <span className="version-dot mt-1" data-current={current ? "true" : "false"} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-semibold">v{version.versionNumber}</span>
-                {index === 0 ? <Badge variant="secondary" className="text-[10px]">Current</Badge> : null}
+                {current ? <Badge variant="secondary" className="text-[10px]">Current</Badge> : null}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{dateFormatter.format(new Date(version.createdAt))}</p>
               <p className="mono-meta mt-1 truncate text-muted-foreground">{version.sourceFilename}</p>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ol>
     </aside>
   );

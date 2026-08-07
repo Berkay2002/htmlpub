@@ -33,3 +33,12 @@ export function rendererErrorHeaders(appOrigin = process.env.APP_ORIGIN ?? "http
   headers.set("Content-Type", "text/plain; charset=utf-8");
   return headers;
 }
+
+export function rendererMarkdownHeaders(appOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000"): Headers {
+  const headers = rendererErrorHeaders(appOrigin);
+  headers.set("Content-Type", "text/markdown; charset=utf-8");
+  headers.set("Content-Disposition", "inline");
+  headers.set("Access-Control-Allow-Origin", new URL(appOrigin).origin);
+  headers.set("Vary", "Origin");
+  return headers;
+}

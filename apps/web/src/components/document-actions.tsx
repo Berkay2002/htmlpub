@@ -104,10 +104,10 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
   return (
     <>
       <Card className="mt-6 rounded-2xl border-border/80 bg-card/95 shadow-sm" id="sharing">
-        <CardHeader className="border-b border-border/70 px-5 py-4"><CardTitle className="text-sm">Sharing</CardTitle><CardDescription className="mt-1 text-xs">Reader and raw HTML links always resolve the latest version and remain valid until revoked or rotated.</CardDescription></CardHeader>
+        <CardHeader className="border-b border-border/70 px-5 py-4"><CardTitle className="text-sm">Sharing</CardTitle><CardDescription className="mt-1 text-xs">Reader, Markdown, and raw HTML links always resolve the latest version and remain valid until revoked or rotated.</CardDescription></CardHeader>
         <CardContent className="grid gap-4 px-5 py-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center"><Button onPress={() => void rotate()} isDisabled={busy !== null} className="rounded-xl">{busy === "share" ? <Spinner data-icon="inline-start" /> : <Share2 data-icon="inline-start" />}{shared ? "Rotate link" : "Create link"}</Button>{shared ? <Button variant="outline" onPress={() => void revoke()} isDisabled={busy !== null} className="rounded-xl text-destructive hover:text-destructive"><Unlink data-icon="inline-start" />Revoke</Button> : null}<Button variant="ghost" onPress={() => setArchiving(true)} isDisabled={busy !== null} className="rounded-xl text-destructive hover:text-destructive sm:ml-auto"><Archive data-icon="inline-start" />Archive</Button></div>
-          {shareResult ? <Alert className="rounded-xl border-primary/30 bg-primary/5"><Share2 data-icon="inline-start" /><div className="grid min-w-0 flex-1 gap-3"><AlertDescription>Anyone with either bearer link can access the latest version.</AlertDescription>{([['Reader', shareResult.url], ['Raw HTML', shareResult.contentUrl]] as const).map(([label, value]) => <div key={label} className="flex flex-col gap-2 sm:flex-row sm:items-center"><span className="w-20 shrink-0 text-xs font-medium">{label}</span><code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-border/80 bg-background px-3 py-2 text-xs">{value}</code><Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copy(value)}><Copy data-icon="inline-start" />Copy</Button></div>)}</div></Alert> : null}
+          {shareResult ? <Alert className="rounded-xl border-primary/30 bg-primary/5"><Share2 data-icon="inline-start" /><div className="grid min-w-0 flex-1 gap-3"><AlertDescription>Anyone with a bearer link can access the latest version.</AlertDescription>{([['Reader', shareResult.url], ['Markdown', shareResult.markdownUrl], ['Raw HTML', shareResult.contentUrl]] as const).map(([label, value]) => <div key={label} className="flex flex-col gap-2 sm:flex-row sm:items-center"><span className="w-20 shrink-0 text-xs font-medium">{label}</span><code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-border/80 bg-background px-3 py-2 text-xs">{value}</code><Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copy(value)}><Copy data-icon="inline-start" />Copy</Button></div>)}</div></Alert> : null}
         </CardContent>
       </Card>
 
@@ -122,11 +122,18 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
 export function RestoreButton({ slug, version }: { slug: string; version: number }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   async function restore() {
     setBusy(true);
-    try { await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/versions/${version}/restore`, { method: "POST" })); toast.success(`Version ${version} restored`); router.refresh(); }
+    try { await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/versions/${version}/restore`, { method: "POST" })); toast.success(`Current version switched to v${version}`); setConfirming(false); router.refresh(); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Restore failed"); }
     finally { setBusy(false); }
   }
-  return <Button variant="ghost" size="sm" className="rounded-xl" isDisabled={busy} onPress={() => void restore()}>{busy ? <Spinner data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}{busy ? "Restoring" : "Restore"}</Button>;
+  return <>
+    <Button variant="ghost" size="sm" className="rounded-xl" isDisabled={busy} onPress={() => setConfirming(true)} aria-label={`Switch current version to v${version}`}>{busy ? <Spinner data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}{busy ? "Switching" : `Switch to v${version}`}</Button>
+    <AlertDialogContent isOpen={confirming} onOpenChange={setConfirming} size="sm">
+      <AlertDialogHeader><AlertDialogMedia><RotateCcw /></AlertDialogMedia><AlertDialogTitle>Switch to version {version}?</AlertDialogTitle><AlertDialogDescription>Version {version} will become the current version. All existing versions stay in history, and this switch will not create a new version.</AlertDialogDescription></AlertDialogHeader>
+      <AlertDialogFooter><AlertDialogCancel className="rounded-xl">Keep current</AlertDialogCancel><AlertDialogAction className="rounded-xl" onPress={() => void restore()} isDisabled={busy}>{busy ? <Spinner data-icon="inline-start" /> : null}{busy ? "Switching" : `Switch to v${version}`}</AlertDialogAction></AlertDialogFooter>
+    </AlertDialogContent>
+  </>;
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { publicContentNotFound, publicContentRedirect } from "./public-share";
 
-describe("the public raw HTML boundary", () => {
+describe("the public content boundary", () => {
   it("redirects stable bearer links without allowing caches or referrer leakage", () => {
     const response = publicContentRedirect("https://renderer.example.com/render/signed-ticket");
     expect(response.status).toBe(307);
@@ -15,6 +15,6 @@ describe("the public raw HTML boundary", () => {
     const response = publicContentNotFound();
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.text()).toBe("Shared HTML not found");
+    expect(await response.text()).toBe("Shared artifact not found");
   });
 });

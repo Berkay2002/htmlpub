@@ -35,13 +35,13 @@ htmlpub unshare launch-plan
 
 Publishing to an existing owner-scoped slug creates the next version. Identical content returns the existing version without uploading bytes. Use a stable `--slug` when successive agent runs should update the same artifact. `share` creates a new token and revokes any previous share link because share secrets are never stored in recoverable form.
 
-The JSON share result contains two public bearer links:
+The JSON share result contains three public bearer links:
 
 ```json
-{"ok":true,"data":{"slug":"launch-plan","url":"https://htmlpub.example/s/token","contentUrl":"https://htmlpub.example/s/token/raw","rotated":true}}
+{"ok":true,"data":{"slug":"launch-plan","url":"https://htmlpub.example/s/token","markdownUrl":"https://htmlpub.example/s/token/markdown","contentUrl":"https://htmlpub.example/s/token/raw","rotated":true}}
 ```
 
-Give `url` to a person for the reader page. Give `contentUrl` to an agent or HTTP client that needs the latest HTML bytes. The content URL follows a temporary redirect to the isolated renderer and requires no htmlpub API token. Revoking or rotating sharing invalidates both stable URLs.
+Give `url` to a person for the reader page. Give `markdownUrl` to an agent by default for compact GFM text. Give `contentUrl` to an agent or HTTP client that needs the authoritative HTML bytes, scripts, or interactive structure. Both content URLs follow a temporary redirect to the isolated renderer and require no htmlpub API token. Revoking or rotating sharing invalidates all three stable URLs.
 
 Restore an earlier immutable version by first inspecting history, then previewing the write:
 
@@ -51,7 +51,7 @@ htmlpub --json documents restore launch-plan --version 2 --dry-run
 htmlpub --json documents restore launch-plan --version 2
 ```
 
-The final restore command is a live write. It creates a new version and does not mutate or delete history.
+The final restore command is a live write. It switches the document's current pointer to the selected existing version. No new version is created, and history is not mutated or deleted.
 
 ## JSON policy
 

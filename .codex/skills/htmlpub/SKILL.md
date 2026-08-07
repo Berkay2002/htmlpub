@@ -1,6 +1,6 @@
 ---
 name: htmlpub
-description: Route htmlpub CLI work to the repository's plugin skills. Use when Codex needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader and raw-content links, retrieve shared HTML, or manage document versions.
+description: Route htmlpub CLI work to the repository's plugin skills. Use when Codex needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader, Markdown, and raw-content links, retrieve shared content, or manage document versions.
 ---
 
 # htmlpub workflow
@@ -8,7 +8,7 @@ description: Route htmlpub CLI work to the repository's plugin skills. Use when 
 Use the canonical plugin instructions carried by this repository:
 
 - Read `skills/publish-html-artifacts/SKILL.md` for validation, dry-run, upload, and publish verification.
-- Read `skills/manage-html-library/SKILL.md` for discovery, version history, public sharing, raw HTML retrieval, revocation, and restoration.
+- Read `skills/manage-html-library/SKILL.md` for discovery, version history, public sharing, Markdown or raw HTML retrieval, revocation, and restoration.
 
 Verify the command and configuration first:
 
@@ -40,6 +40,6 @@ Rules:
 
 - Prefer `--json` when analyzing output.
 - A publish is a live write and an existing slug receives a new version.
-- `share` returns a public reader `url` and raw HTML `contentUrl`, and rotates any existing links. Do not run it unless the user requested sharing or rotation.
+- `share` returns a public reader `url`, agent-friendly `markdownUrl`, and raw HTML `contentUrl`, and rotates any existing links. Give agents `markdownUrl` by default. Do not run it unless the user requested sharing or rotation.
 - `unshare` revokes external access. Do not run it without explicit approval.
 - Use `request GET` only when a high-level read command is missing. Raw writes are intentionally unavailable.

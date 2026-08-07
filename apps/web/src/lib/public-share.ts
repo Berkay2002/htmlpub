@@ -1,5 +1,5 @@
 export function publicContentNotFound(): Response {
-  return new Response("Shared HTML not found", {
+  return new Response("Shared artifact not found", {
     status: 404,
     headers: { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" }
   });

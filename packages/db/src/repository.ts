@@ -175,13 +175,14 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
         slug: documents.slug,
         title: documents.title,
         collection: collections.name,
+        currentVersion: documentVersions.versionNumber,
         versionCount: documents.versionCounter,
         latestFilename: documentVersions.sourceFilename,
         updatedAt: documents.updatedAt,
         shareId: shareLinks.id
       }).from(documents)
         .leftJoin(collections, eq(documents.collectionId, collections.id))
-        .leftJoin(documentVersions, eq(documents.currentVersionId, documentVersions.id))
+        .innerJoin(documentVersions, eq(documents.currentVersionId, documentVersions.id))
         .leftJoin(shareLinks, and(eq(shareLinks.documentId, documents.id), isNull(shareLinks.revokedAt)))
         .where(and(...conditions))
         .orderBy(desc(documents.updatedAt))
@@ -211,7 +212,9 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
         .where(and(eq(documents.ownerId, ownerId), eq(documents.slug, slug), isNull(documents.archivedAt), isNotNull(documents.currentVersionId))).limit(1);
       if (!document) return null;
       const versions = await db.select().from(documentVersions).where(eq(documentVersions.documentId, document.id)).orderBy(desc(documentVersions.versionNumber));
-      return { ...document, shared: Boolean(document.shared), updatedAt: document.updatedAt.toISOString(), versions: versions.map((version) => ({ ...version, createdAt: version.createdAt.toISOString() })) };
+      const currentVersion = versions.find((version) => version.id === document.currentVersionId);
+      if (!currentVersion) throw new AppError("version_unavailable", "Current version could not be resolved", 500);
+      return { ...document, currentVersion: currentVersion.versionNumber, shared: Boolean(document.shared), updatedAt: document.updatedAt.toISOString(), versions: versions.map((version) => ({ ...version, createdAt: version.createdAt.toISOString() })) };
     },
 
     async getVersion(versionId: string) {
@@ -287,22 +290,9 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
         if (!document) throw new AppError("document_not_found", "Document not found", 404);
         const [source] = await tx.select().from(documentVersions).where(and(eq(documentVersions.documentId, document.id), eq(documentVersions.versionNumber, versionNumber))).limit(1);
         if (!source) throw new AppError("version_not_found", "Version not found", 404);
-        const newId = randomUUID();
-        const [updated] = await tx.update(documents).set({ versionCounter: sql`${documents.versionCounter} + 1`, currentVersionId: newId, updatedAt: new Date() }).where(eq(documents.id, document.id)).returning();
+        const [updated] = await tx.update(documents).set({ currentVersionId: source.id, updatedAt: new Date() }).where(eq(documents.id, document.id)).returning();
         if (!updated) throw new AppError("document_not_found", "Document not found", 404);
-        await tx.insert(documentVersions).values({
-          id: newId,
-          documentId: document.id,
-          versionNumber: updated.versionCounter,
-          blobPath: source.blobPath,
-          blobUrl: source.blobUrl,
-          etag: source.etag,
-          sha256: source.sha256,
-          byteSize: source.byteSize,
-          sourceFilename: source.sourceFilename,
-          restoredFromVersionId: source.id
-        });
-        return { documentId: document.id, slug: document.slug, title: document.title, version: updated.versionCounter, dashboardUrl: `${origin}/dashboard/documents/${encodeURIComponent(document.slug)}`, shareUrl: null, shareContentUrl: null, duplicate: false };
+        return { documentId: document.id, slug: document.slug, title: document.title, version: source.versionNumber, dashboardUrl: `${origin}/dashboard/documents/${encodeURIComponent(document.slug)}`, shareUrl: null, shareContentUrl: null, duplicate: false };
       });
     }
   };

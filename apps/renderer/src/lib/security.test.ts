@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rendererErrorHeaders, rendererHeaders, SANDBOX_TOKENS } from "./security";
+import { rendererErrorHeaders, rendererHeaders, rendererMarkdownHeaders, SANDBOX_TOKENS } from "./security";
 
 describe("the renderer response boundary", () => {
   it("allows report scripts without granting same-origin, forms, or top navigation", () => {
@@ -23,5 +23,13 @@ describe("the renderer response boundary", () => {
     expect(headers.get("content-security-policy")).toContain("sandbox allow-scripts");
     expect(headers.get("referrer-policy")).toBe("no-referrer");
     expect(headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("allows the main app to copy Markdown without making renderer responses public to other browser origins", () => {
+    const headers = rendererMarkdownHeaders("https://app.example.com/dashboard");
+    expect(headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(headers.get("access-control-allow-origin")).toBe("https://app.example.com");
+    expect(headers.get("cache-control")).toContain("no-store");
+    expect(headers.get("vary")).toBe("Origin");
   });
 });

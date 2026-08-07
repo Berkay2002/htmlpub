@@ -10,9 +10,13 @@ export function createOpaqueToken(prefix: "htmlpub" | "share" = "share"): { toke
   return { token, hash: sha256(token), displayPrefix: token.slice(0, prefix === "htmlpub" ? 16 : 10) };
 }
 
-export function createShareUrls(origin: string, token: string): { url: string; contentUrl: string } {
+export function createShareUrls(origin: string, token: string): { url: string; markdownUrl: string; contentUrl: string } {
   const shareUrl = new URL(`/s/${encodeURIComponent(token)}`, new URL(origin).origin);
-  return { url: shareUrl.toString(), contentUrl: new URL(`${shareUrl.pathname}/raw`, shareUrl.origin).toString() };
+  return {
+    url: shareUrl.toString(),
+    markdownUrl: new URL(`${shareUrl.pathname}/markdown`, shareUrl.origin).toString(),
+    contentUrl: new URL(`${shareUrl.pathname}/raw`, shareUrl.origin).toString()
+  };
 }
 
 export function tokenMatches(token: string, expectedHash: string): boolean {
