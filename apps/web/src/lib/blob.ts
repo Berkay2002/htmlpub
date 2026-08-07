@@ -13,6 +13,7 @@ export function createBlobGateway(): BlobGateway {
       const { presignedUrl } = await presignUrl(token, {
         pathname,
         operation: "put",
+        access: "private",
         validUntil,
         addRandomSuffix: false
       });
