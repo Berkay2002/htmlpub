@@ -19,7 +19,15 @@ export async function GET(request: Request, { params }: Context) {
     const result = await get(version.blobUrl, { access: "private" });
     if (!result || result.statusCode !== 200) return new Response("HTML artifact not found", { status: 404, headers: rendererErrorHeaders() });
     const body = readerMode
-      ? applyReaderMode(await new Response(result.stream).text(), new URL("/typeset.css", request.url).toString())
+      ? applyReaderMode(
+          await new Response(result.stream).text(),
+          new URL("/typeset.css", request.url).toString(),
+          (() => {
+            const rawUrl = new URL(request.url);
+            rawUrl.searchParams.delete("mode");
+            return rawUrl.toString();
+          })()
+        )
       : result.stream;
     return new Response(body, { status: 200, headers: rendererHeaders() });
   } catch (error) {

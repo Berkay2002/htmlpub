@@ -4,6 +4,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getRepository } from "@/lib/repository";
 import { renderUrl } from "@/lib/render";
 import { DocumentActions, RestoreButton } from "@/components/document-actions";
+import { ReaderFrame } from "@/components/reader-frame";
 import { Badge } from "@htmlpub/ui/components/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@htmlpub/ui/components/breadcrumb";
 import { buttonVariants } from "@htmlpub/ui/components/button";
@@ -18,6 +19,7 @@ export default async function DocumentPage({ params }: Props) {
   const document = await getRepository().getDocument(ownerId, slug);
   if (!document?.currentVersionId) notFound();
   const previewUrl = renderUrl(document.currentVersionId, "reader");
+  const rawPreviewUrl = renderUrl(document.currentVersionId, "raw");
 
   return (
     <section className="flex flex-1 flex-col gap-6 px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
@@ -29,7 +31,7 @@ export default async function DocumentPage({ params }: Props) {
         <a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={previewUrl} target="_blank" rel="noreferrer"><ExternalLink data-icon="inline-start" />Open fullscreen</a>
       </header>
 
-      <div className="document-preview"><iframe title={document.title} src={previewUrl} sandbox="allow-scripts allow-downloads allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" /></div>
+      <ReaderFrame title={document.title} src={previewUrl} rawSrc={rawPreviewUrl} className="document-preview" />
       <DocumentActions slug={document.slug} shared={document.shared} />
 
       <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">
