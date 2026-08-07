@@ -27,3 +27,9 @@ export function rendererHeaders(appOrigin = process.env.APP_ORIGIN ?? "http://lo
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
   };
 }
+
+export function rendererErrorHeaders(appOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000"): Headers {
+  const headers = new Headers(rendererHeaders(appOrigin));
+  headers.set("Content-Type", "text/plain; charset=utf-8");
+  return headers;
+}
