@@ -10,18 +10,19 @@ import { Alert, AlertDescription } from "@htmlpub/ui/components/alert";
 import { Button } from "@htmlpub/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@htmlpub/ui/components/card";
 import { Spinner } from "@htmlpub/ui/components/spinner";
+import type { ShareResult } from "@htmlpub/core";
 
 export function DocumentActions({ slug, shared }: { slug: string; shared: boolean }) {
   const router = useRouter();
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareResult, setShareResult] = useState<ShareResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
 
   async function rotate() {
     setBusy("share");
     try {
-      const result = await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/share`, { method: "POST" }));
-      setShareUrl(result.url); toast.success(shared ? "Share link rotated" : "Share link created"); router.refresh();
+      const result = await readApi<ShareResult>(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/share`, { method: "POST" }));
+      setShareResult(result); toast.success(shared ? "Share link rotated" : "Share link created"); router.refresh();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Sharing failed"); }
     finally { setBusy(null); }
   }
@@ -30,7 +31,7 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
     setBusy("revoke");
     try {
       await readApi(await fetch(`/api/v1/documents/${encodeURIComponent(slug)}/share`, { method: "DELETE" }));
-      setShareUrl(null); toast.success("Share access revoked"); router.refresh();
+      setShareResult(null); toast.success("Share access revoked"); router.refresh();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Revocation failed"); }
     finally { setBusy(null); }
   }
@@ -46,16 +47,16 @@ export function DocumentActions({ slug, shared }: { slug: string; shared: boolea
 
   async function copy(value: string) {
     await navigator.clipboard.writeText(value);
-    toast.success("Share link copied");
+    toast.success("Link copied");
   }
 
   return (
     <>
       <Card className="mt-6 rounded-2xl border-border/80 bg-card/95 shadow-sm" id="sharing">
-        <CardHeader className="border-b border-border/70 px-5 py-4"><CardTitle className="text-sm">Sharing</CardTitle><CardDescription className="mt-1 text-xs">Share links always open the latest version and remain valid until revoked or rotated.</CardDescription></CardHeader>
+        <CardHeader className="border-b border-border/70 px-5 py-4"><CardTitle className="text-sm">Sharing</CardTitle><CardDescription className="mt-1 text-xs">Reader and raw HTML links always resolve the latest version and remain valid until revoked or rotated.</CardDescription></CardHeader>
         <CardContent className="grid gap-4 px-5 py-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center"><Button onPress={() => void rotate()} isDisabled={busy !== null} className="rounded-xl">{busy === "share" ? <Spinner data-icon="inline-start" /> : <Share2 data-icon="inline-start" />}{shared ? "Rotate link" : "Create link"}</Button>{shared ? <Button variant="outline" onPress={() => void revoke()} isDisabled={busy !== null} className="rounded-xl text-destructive hover:text-destructive"><Unlink data-icon="inline-start" />Revoke</Button> : null}<Button variant="ghost" onPress={() => setArchiving(true)} isDisabled={busy !== null} className="rounded-xl text-destructive hover:text-destructive sm:ml-auto"><Archive data-icon="inline-start" />Archive</Button></div>
-          {shareUrl ? <Alert className="rounded-xl border-primary/30 bg-primary/5"><Share2 data-icon="inline-start" /><div className="min-w-0 flex-1"><AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center"><code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-border/80 bg-background px-3 py-2 text-xs">{shareUrl}</code><Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copy(shareUrl)}><Copy data-icon="inline-start" />Copy</Button></AlertDescription></div></Alert> : null}
+          {shareResult ? <Alert className="rounded-xl border-primary/30 bg-primary/5"><Share2 data-icon="inline-start" /><div className="grid min-w-0 flex-1 gap-3"><AlertDescription>Anyone with either bearer link can access the latest version.</AlertDescription>{([['Reader', shareResult.url], ['Raw HTML', shareResult.contentUrl]] as const).map(([label, value]) => <div key={label} className="flex flex-col gap-2 sm:flex-row sm:items-center"><span className="w-20 shrink-0 text-xs font-medium">{label}</span><code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-border/80 bg-background px-3 py-2 text-xs">{value}</code><Button variant="outline" size="sm" className="rounded-xl" onPress={() => void copy(value)}><Copy data-icon="inline-start" />Copy</Button></div>)}</div></Alert> : null}
         </CardContent>
       </Card>
 

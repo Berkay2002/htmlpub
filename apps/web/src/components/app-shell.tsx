@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 const active = pathname === href || (href === "/dashboard" && pathname.startsWith("/dashboard/documents/"));
                 return (
                   <SidebarMenuItem key={href}>
-                    <SidebarMenuButton href={href} isActive={active} tooltip={label}>
+                    <SidebarMenuButton href={href} isActive={active} tooltip={label} className="shadow-none hover:shadow-sm active:shadow-none focus-visible:shadow-none data-[active]:shadow-none">
                       <Icon data-icon="inline-start" />
                       <span>{label}</span>
                     </SidebarMenuButton>

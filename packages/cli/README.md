@@ -6,7 +6,8 @@ Publish self-contained UTF-8 HTML files to an htmlpub workspace from any directo
 
 ```bash
 pnpm --filter @htmlpub/cli build
-pnpm --filter @htmlpub/cli link --global
+cd packages/cli
+npm link
 htmlpub --help
 htmlpub --json doctor
 htmlpub auth login --endpoint https://your-htmlpub-app.vercel.app
@@ -17,15 +18,40 @@ htmlpub auth login --endpoint https://your-htmlpub-app.vercel.app
 ## Common jobs
 
 ```bash
-htmlpub publish ./plan.html --collection Planning
-htmlpub publish ./plan.html --slug launch-plan --dry-run
-htmlpub --json list --limit 20
+htmlpub --json publish ./summary.html --type summary --dry-run
+htmlpub --json publish ./summary.html --type summary
+htmlpub --json publish ./plan.html --type plan --slug launch-plan
+htmlpub --json collections list
+htmlpub --json documents list --limit 20
+htmlpub --json documents get launch-plan
+htmlpub --json documents versions launch-plan
 htmlpub open launch-plan
+htmlpub --json share launch-plan --dry-run
 htmlpub share launch-plan
 htmlpub unshare launch-plan
 ```
 
-Publishing to an existing owner-scoped slug creates the next version. Identical content returns the existing version without uploading bytes. `share` creates a new token and revokes any previous share link because share secrets are never stored in recoverable form.
+`--type summary`, `plan`, `review`, or `report` assigns the matching stable collection. Use `--collection` for any other collection name. The two flags are intentionally mutually exclusive.
+
+Publishing to an existing owner-scoped slug creates the next version. Identical content returns the existing version without uploading bytes. Use a stable `--slug` when successive agent runs should update the same artifact. `share` creates a new token and revokes any previous share link because share secrets are never stored in recoverable form.
+
+The JSON share result contains two public bearer links:
+
+```json
+{"ok":true,"data":{"slug":"launch-plan","url":"https://htmlpub.example/s/token","contentUrl":"https://htmlpub.example/s/token/raw","rotated":true}}
+```
+
+Give `url` to a person for the reader page. Give `contentUrl` to an agent or HTTP client that needs the latest HTML bytes. The content URL follows a temporary redirect to the isolated renderer and requires no htmlpub API token. Revoking or rotating sharing invalidates both stable URLs.
+
+Restore an earlier immutable version by first inspecting history, then previewing the write:
+
+```bash
+htmlpub --json documents versions launch-plan
+htmlpub --json documents restore launch-plan --version 2 --dry-run
+htmlpub --json documents restore launch-plan --version 2
+```
+
+The final restore command is a live write. It creates a new version and does not mutate or delete history.
 
 ## JSON policy
 
@@ -40,3 +66,19 @@ With `--json`, stdout contains exactly one stable envelope. Progress goes to std
 ```
 
 `request GET <path>` is a read-only escape hatch. It uses configured authentication and refuses cross-origin URLs or write methods.
+
+Command families use the same envelope:
+
+```json
+{"ok":true,"data":{"collections":[{"id":"...","name":"Plans","slug":"plans","createdAt":"2026-08-07T10:00:00.000Z"}]}}
+```
+
+```json
+{"ok":true,"data":{"action":"publish","file":"C:\\reports\\plan.html","slug":"launch-plan","collection":"Plans","byteSize":2048,"sha256":"...","filename":"plan.html"}}
+```
+
+```json
+{"ok":true,"data":{"slug":"launch-plan","currentVersion":3,"versions":[]}}
+```
+
+The API payload is passed through inside `data` for reads and completed writes. CLI-only previews also use `data` and include an `action` field. Errors use a stable `error.code` and redacted `error.message`; credentials are never included.

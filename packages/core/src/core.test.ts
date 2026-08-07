@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_HTML_BYTES, createOpaqueToken, createRenderTicket, normalizeSlug, publishRequestSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
+import { MAX_HTML_BYTES, createOpaqueToken, createRenderTicket, createShareUrls, normalizeSlug, publishRequestSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
 
 describe("the publishing contract", () => {
   it("normalizes a filename into a stable URL slug", () => {
@@ -22,6 +22,13 @@ describe("the publishing contract", () => {
     expect(created.token.startsWith("htmlpub_")).toBe(true);
     expect(tokenMatches(created.token, created.hash)).toBe(true);
     expect(tokenMatches(`${created.token}x`, created.hash)).toBe(false);
+  });
+
+  it("creates stable reader and raw-content URLs from one revocable share token", () => {
+    expect(createShareUrls("https://htmlpub.example.com/dashboard", "share-token")).toEqual({
+      url: "https://htmlpub.example.com/s/share-token",
+      contentUrl: "https://htmlpub.example.com/s/share-token/raw"
+    });
   });
 
   it("accepts an unexpired render ticket and rejects it after five minutes", () => {

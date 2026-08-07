@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, ilike, inArray, isNotNull, isNull, lt, notExists, or, sql } from "drizzle-orm";
-import { AppError, createOpaqueToken, normalizeSlug, sha256, type BlobMetadata, type DocumentSummary, type PendingUpload, type PublishRepository, type PublishRequest, type PublishResult } from "@htmlpub/core";
+import { AppError, createOpaqueToken, createShareUrls, normalizeSlug, sha256, type BlobMetadata, type DocumentSummary, type PendingUpload, type PublishRepository, type PublishRequest, type PublishResult } from "@htmlpub/core";
 import type { HtmlpubDb } from "./client";
 import { accounts, apiTokens, collections, documents, documentVersions, shareLinks, uploadSessions } from "./schema";
 
@@ -50,6 +50,7 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
         version: version.versionNumber,
         dashboardUrl: `${origin}/dashboard/documents/${encodeURIComponent(document.slug)}`,
         shareUrl: null,
+        shareContentUrl: null,
         duplicate: true
       };
     },
@@ -123,6 +124,7 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
           version: document.versionCounter,
           dashboardUrl: `${origin}/dashboard/documents/${encodeURIComponent(document.slug)}`,
           shareUrl: null,
+          shareContentUrl: null,
           duplicate: false
         };
         await tx.update(uploadSessions).set({ status: "completed", completedAt: new Date(), completedResult: result }).where(eq(uploadSessions.id, uploadId));
@@ -238,7 +240,7 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
         await tx.update(shareLinks).set({ revokedAt: new Date() }).where(and(eq(shareLinks.documentId, document.id), isNull(shareLinks.revokedAt)));
         await tx.insert(shareLinks).values({ documentId: document.id, tokenHash: created.hash });
       });
-      return { url: `${origin}/s/${created.token}`, token: created.token };
+      return createShareUrls(origin, created.token);
     },
 
     async revokeShare(ownerId: string, slug: string) {
@@ -300,7 +302,7 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
           sourceFilename: source.sourceFilename,
           restoredFromVersionId: source.id
         });
-        return { documentId: document.id, slug: document.slug, title: document.title, version: updated.versionCounter, dashboardUrl: `${origin}/dashboard/documents/${encodeURIComponent(document.slug)}`, shareUrl: null, duplicate: false };
+        return { documentId: document.id, slug: document.slug, title: document.title, version: updated.versionCounter, dashboardUrl: `${origin}/dashboard/documents/${encodeURIComponent(document.slug)}`, shareUrl: null, shareContentUrl: null, duplicate: false };
       });
     }
   };

@@ -22,6 +22,7 @@ export const publishResultSchema = z.object({
   version: z.number().int().positive(),
   dashboardUrl: z.string().url(),
   shareUrl: z.string().url().nullable(),
+  shareContentUrl: z.string().url().nullable(),
   duplicate: z.boolean()
 });
 
@@ -48,6 +49,11 @@ export type DocumentSummary = {
   latestFilename: string | null;
   updatedAt: string;
   shared: boolean;
+};
+
+export type ShareResult = {
+  url: string;
+  contentUrl: string;
 };
 
 export type ApiEnvelope<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };

@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import open from "open";
-import { normalizeSlug, type DocumentSummary, type PublishResult, type StartUploadResult } from "@htmlpub/core";
+import { normalizeSlug, type DocumentSummary, type PublishResult, type ShareResult, type StartUploadResult } from "@htmlpub/core";
 import { HtmlpubApiClient } from "./api-client";
+import { parseBoundedInteger, resolveCollection } from "./command-input";
 import { loadConfig, promptSecret, resolveConfiguration, saveConfig } from "./config";
 import { inspectHtmlFile } from "./html-file";
 import { printFailure, printProgress, printSuccess } from "./output";
@@ -44,16 +45,22 @@ authCommand.command("logout").description("Remove the API token from local confi
   await saveConfig({ endpoint });
   printSuccess({ endpoint, tokenStored: false }, jsonMode(), "Saved API token removed.");
 });
+authCommand.command("status").description("Show which endpoint and authentication source the CLI will use.").action(async () => {
+  const resolved = resolveConfiguration(process.env, await loadConfig());
+  printSuccess({ endpoint: resolved.endpoint, endpointSource: resolved.endpointSource, tokenAvailable: Boolean(resolved.token), tokenSource: resolved.tokenSource }, jsonMode(), [`Endpoint: ${resolved.endpoint} (${resolved.endpointSource})`, `Token: ${resolved.token ? `available from ${resolved.tokenSource}` : "missing"}`].join("\n"));
+});
 
 program.command("publish").description("Publish an HTML file or create the next immutable version.")
   .argument("<file>", "self-contained .html file")
   .option("--slug <slug>", "stable document slug")
   .option("--title <title>", "document title")
   .option("--collection <name>", "collection name")
+  .option("--type <type>", "artifact type: summary, plan, review, or report")
   .option("--dry-run", "validate and show metadata without uploading")
-  .action(async (path: string, options: { slug?: string; title?: string; collection?: string; dryRun?: boolean }) => {
+  .action(async (path: string, options: { slug?: string; title?: string; collection?: string; type?: string; dryRun?: boolean }) => {
     const inspected = await inspectHtmlFile(path);
-    const request = { slug: normalizeSlug(options.slug ?? inspected.slug), title: options.title?.trim() || inspected.title, ...(options.collection?.trim() ? { collection: options.collection.trim() } : {}), byteSize: inspected.byteSize, sha256: inspected.sha256, filename: inspected.filename };
+    const collection = resolveCollection(options.type, options.collection);
+    const request = { slug: normalizeSlug(options.slug ?? inspected.slug), title: options.title?.trim() || inspected.title, ...(collection ? { collection } : {}), byteSize: inspected.byteSize, sha256: inspected.sha256, filename: inspected.filename };
     if (options.dryRun) { printSuccess({ action: "publish", file: inspected.path, ...request }, jsonMode(), `Would publish ${request.filename} as ${request.slug} (${request.byteSize} bytes).`); return; }
     const { client } = await configuredClient();
     printProgress(`Preparing ${request.slug}…`, jsonMode());
@@ -66,19 +73,66 @@ program.command("publish").description("Publish an HTML file or create the next 
     printSuccess(result, jsonMode(), `Published ${result.title} v${result.version}.\n${result.dashboardUrl}`);
   });
 
-program.command("list").description("List documents in the workspace.")
+type DocumentVersion = { id: string; versionNumber: number; sourceFilename: string; byteSize: number; createdAt: string; restoredFromVersionId: string | null };
+type DocumentDetail = { id: string; slug: string; title: string; collection: string | null; versionCount: number; updatedAt: string; shared: boolean; versions: DocumentVersion[] };
+
+async function listDocuments(options: { limit: string; offset: string; search?: string; collection?: string }) {
+  const limit = parseBoundedInteger(options.limit, "limit", { minimum: 1, maximum: 100 });
+  const offset = parseBoundedInteger(options.offset, "offset", { minimum: 0 });
+  const { client } = await configuredClient();
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (options.search) query.set("search", options.search);
+  if (options.collection) query.set("collection", options.collection);
+  const result = await client.request<{ documents: DocumentSummary[]; nextOffset: number | null }>("GET", `/api/v1/documents?${query}`);
+  const human = result.documents.length ? result.documents.map((document) => `${document.slug.padEnd(28)} v${String(document.versionCount).padEnd(4)} ${document.shared ? "shared " : "private"}  ${document.title}`).join("\n") : "No documents found.";
+  printSuccess(result, jsonMode(), human);
+}
+
+function addDocumentListOptions(command: Command): Command {
+  return command
   .option("--limit <number>", "maximum documents", "50")
   .option("--offset <number>", "pagination offset", "0")
   .option("--search <query>", "title or slug search")
-  .option("--collection <slug>", "collection slug")
-  .action(async (options: { limit: string; offset: string; search?: string; collection?: string }) => {
-    const { client } = await configuredClient();
-    const query = new URLSearchParams({ limit: options.limit, offset: options.offset });
-    if (options.search) query.set("search", options.search); if (options.collection) query.set("collection", options.collection);
-    const result = await client.request<{ documents: DocumentSummary[]; nextOffset: number | null }>("GET", `/api/v1/documents?${query}`);
-    const human = result.documents.length ? result.documents.map((document) => `${document.slug.padEnd(28)} v${String(document.versionCount).padEnd(4)} ${document.shared ? "shared " : "private"}  ${document.title}`).join("\n") : "No documents found.";
-    printSuccess(result, jsonMode(), human);
-  });
+  .option("--collection <slug>", "collection slug");
+}
+
+addDocumentListOptions(program.command("list").description("List documents in the workspace.")).action(listDocuments);
+
+const collectionsCommand = program.command("collections").description("Discover workspace collections.");
+collectionsCommand.command("list").description("List collections in the workspace.").action(async () => {
+  const { client } = await configuredClient();
+  const result = await client.request<{ collections: Array<{ id: string; name: string; slug: string; createdAt: string }> }>("GET", "/api/v1/collections");
+  const human = result.collections.length ? result.collections.map((collection) => `${collection.slug.padEnd(24)} ${collection.name}`).join("\n") : "No collections found.";
+  printSuccess(result, jsonMode(), human);
+});
+
+const documentsCommand = program.command("documents").description("Discover and inspect published documents.");
+addDocumentListOptions(documentsCommand.command("list").description("List documents in the workspace.")).action(listDocuments);
+documentsCommand.command("get").description("Read one document and its immutable version history.").argument("<slug>").action(async (slug: string) => {
+  const { client } = await configuredClient();
+  const document = await client.request<DocumentDetail>("GET", `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}`);
+  printSuccess(document, jsonMode(), `${document.title}\nSlug: ${document.slug}\nCollection: ${document.collection ?? "none"}\nVersions: ${document.versionCount}\nShared: ${document.shared ? "yes" : "no"}`);
+});
+documentsCommand.command("versions").description("List immutable versions for one document.").argument("<slug>").action(async (slug: string) => {
+  const { client } = await configuredClient();
+  const document = await client.request<DocumentDetail>("GET", `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}`);
+  const data = { slug: document.slug, currentVersion: document.versionCount, versions: document.versions };
+  const human = document.versions.map((version) => `v${String(version.versionNumber).padEnd(4)} ${String(version.byteSize).padStart(9)} bytes  ${version.createdAt}  ${version.sourceFilename}`).join("\n");
+  printSuccess(data, jsonMode(), human || "No versions found.");
+});
+documentsCommand.command("restore").description("Create a new current version from an earlier immutable version.").argument("<slug>").requiredOption("--version <number>", "version to restore").option("--dry-run", "validate the target without restoring").action(async (slug: string, options: { version: string; dryRun?: boolean }) => {
+  const version = parseBoundedInteger(options.version, "version", { minimum: 1 });
+  const normalized = normalizeSlug(slug);
+  const { client } = await configuredClient();
+  if (options.dryRun) {
+    const document = await client.request<DocumentDetail>("GET", `/api/v1/documents/${encodeURIComponent(normalized)}`);
+    if (!document.versions.some((candidate) => candidate.versionNumber === version)) throw new Error(`Version ${version} does not exist for ${normalized}`);
+    printSuccess({ action: "restore", slug: normalized, version, currentVersion: document.versionCount }, jsonMode(), `Would restore ${normalized} v${version} as a new immutable version.`);
+    return;
+  }
+  const result = await client.request<PublishResult>("POST", `/api/v1/documents/${encodeURIComponent(normalized)}/versions/${version}/restore`);
+  printSuccess(result, jsonMode(), `Restored ${normalized} v${version} as v${result.version}.\n${result.dashboardUrl}`);
+});
 
 program.command("open").description("Open a document in the authenticated dashboard.").argument("<slug>").option("--print", "print the URL without launching a browser").action(async (slug: string, options: { print?: boolean }) => {
   const { client, resolved } = await configuredClient();
@@ -88,10 +142,15 @@ program.command("open").description("Open a document in the authenticated dashbo
   printSuccess({ slug: document.slug, url, opened: !options.print }, jsonMode(), options.print ? url : `Opened ${document.title}.`);
 });
 
-program.command("share").description("Create or rotate the stable latest-version share link.").argument("<slug>").action(async (slug: string) => {
+program.command("share").description("Create or rotate the stable latest-version share link.").argument("<slug>").option("--dry-run", "verify the document without rotating its share link").action(async (slug: string, options: { dryRun?: boolean }) => {
   const { client } = await configuredClient(); const normalized = normalizeSlug(slug);
-  const result = await client.request<{ url: string }>("POST", `/api/v1/documents/${encodeURIComponent(normalized)}/share`);
-  printSuccess({ slug: normalized, ...result, rotated: true }, jsonMode(), `Share link created. Any previous link was revoked.\n${result.url}`);
+  if (options.dryRun) {
+    const document = await client.request<DocumentDetail>("GET", `/api/v1/documents/${encodeURIComponent(normalized)}`);
+    printSuccess({ action: "share", slug: normalized, currentlyShared: document.shared, rotatesExistingLink: document.shared }, jsonMode(), `Would ${document.shared ? "rotate" : "create"} the share link for ${normalized}.`);
+    return;
+  }
+  const result = await client.request<ShareResult>("POST", `/api/v1/documents/${encodeURIComponent(normalized)}/share`);
+  printSuccess({ slug: normalized, ...result, rotated: true }, jsonMode(), `Share links created. Any previous links were revoked.\nReader: ${result.url}\nRaw HTML: ${result.contentUrl}`);
 });
 
 program.command("unshare").description("Revoke the active share link.").argument("<slug>").action(async (slug: string) => {

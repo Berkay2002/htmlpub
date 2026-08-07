@@ -1,6 +1,6 @@
 "use client";
 
-import { MAX_HTML_BYTES, normalizeSlug, type PublishResult, type StartUploadResult } from "@htmlpub/core";
+import { MAX_HTML_BYTES, normalizeSlug, type PublishResult, type ShareResult, type StartUploadResult } from "@htmlpub/core";
 import { Check, FileCode2, UploadCloud, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -54,18 +54,16 @@ export function PublishModal({ onClose }: Props) {
       const bytes = await file.arrayBuffer(); const hash = await sha256Hex(bytes);
       const started = await readApi<StartUploadResult>(await fetch("/api/v1/uploads", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug: normalizeSlug(slug), title, ...(collection.trim() ? { collection: collection.trim() } : {}), byteSize: file.size, sha256: hash, filename: file.name }) }));
       if (started.status === "duplicate") {
-        let shareUrl: string | null = null;
-        if (share) shareUrl = (await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(started.result.slug)}/share`, { method: "POST" }))).url;
-        setResult({ ...started.result, shareUrl }); setProgress(100); router.refresh(); return;
+        const shared = share ? await readApi<ShareResult>(await fetch(`/api/v1/documents/${encodeURIComponent(started.result.slug)}/share`, { method: "POST" })) : null;
+        setResult({ ...started.result, shareUrl: shared?.url ?? null, shareContentUrl: shared?.contentUrl ?? null }); setProgress(100); router.refresh(); return;
       }
       setProgress(42);
       const uploadResponse = await fetch(started.uploadUrl, { method: "PUT", headers: { "content-type": "text/html" }, body: bytes });
       if (!uploadResponse.ok) throw new Error("Blob upload failed. The document was not published.");
       setProgress(82);
       const completed = await readApi<PublishResult>(await fetch(`/api/v1/uploads/${started.uploadId}/complete`, { method: "POST" }));
-      let shareUrl: string | null = null;
-      if (share) shareUrl = (await readApi<{ url: string }>(await fetch(`/api/v1/documents/${encodeURIComponent(completed.slug)}/share`, { method: "POST" }))).url;
-      setResult({ ...completed, shareUrl }); setProgress(100); router.refresh();
+      const shared = share ? await readApi<ShareResult>(await fetch(`/api/v1/documents/${encodeURIComponent(completed.slug)}/share`, { method: "POST" })) : null;
+      setResult({ ...completed, shareUrl: shared?.url ?? null, shareContentUrl: shared?.contentUrl ?? null }); setProgress(100); router.refresh();
     } catch (cause) { setProgress(0); setError(cause instanceof Error ? cause.message : "Publishing failed"); }
   }
 
@@ -73,7 +71,7 @@ export function PublishModal({ onClose }: Props) {
     <Dialog isOpen isDismissable={!busy} onOpenChange={(open) => { if (!open && !busy) onClose(); }} showCloseButton={false} className="max-w-xl rounded-2xl border-border/80 bg-card p-0 shadow-2xl">
       <DialogHeader className="flex flex-row items-start justify-between gap-4 border-b border-border/70 px-6 py-5"><div><DialogTitle className="text-base font-semibold">Publish HTML</DialogTitle><DialogDescription className="mt-1 text-xs">Upload a self-contained artifact to your private workspace.</DialogDescription></div><DialogClose className="rounded-xl" variant="ghost" size="icon-sm" aria-label="Close" isDisabled={busy}><X /></DialogClose></DialogHeader>
       {result ? (
-        <div className="px-6 py-8"><Empty className="min-h-72 border-0"><EmptyHeader><EmptyMedia variant="icon" className="bg-emerald-500/10 text-emerald-600"><Check /></EmptyMedia><EmptyTitle>{result.duplicate ? "Already up to date" : `Published version ${result.version}`}</EmptyTitle><EmptyDescription>The stable document URL is ready.</EmptyDescription></EmptyHeader><div className="flex flex-col gap-2 sm:flex-row"><a className={`${buttonVariants({ size: "sm" })} rounded-xl`} href={result.dashboardUrl}>Open document</a>{result.shareUrl ? <a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={result.shareUrl} target="_blank" rel="noreferrer">Open share link</a> : null}</div></Empty></div>
+        <div className="px-6 py-8"><Empty className="min-h-72 border-0"><EmptyHeader><EmptyMedia variant="icon" className="bg-emerald-500/10 text-emerald-600"><Check /></EmptyMedia><EmptyTitle>{result.duplicate ? "Already up to date" : `Published version ${result.version}`}</EmptyTitle><EmptyDescription>The stable document URL is ready.</EmptyDescription></EmptyHeader><div className="flex flex-col gap-2 sm:flex-row"><a className={`${buttonVariants({ size: "sm" })} rounded-xl`} href={result.dashboardUrl}>Open document</a>{result.shareUrl ? <a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={result.shareUrl} target="_blank" rel="noreferrer">Open reader link</a> : null}{result.shareContentUrl ? <a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={result.shareContentUrl} target="_blank" rel="noreferrer">Open raw HTML</a> : null}</div></Empty></div>
       ) : (
         <>
           <div className="px-6 py-5">

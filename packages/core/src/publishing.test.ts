@@ -38,6 +38,7 @@ function fixture(options: { duplicate?: boolean; blob?: Partial<BlobMetadata> } 
     version: 1,
     dashboardUrl: "https://app.example.com/dashboard/documents/launch-plan",
     shareUrl: null,
+    shareContentUrl: null,
     duplicate: Boolean(options.duplicate)
   };
   const repo: PublishRepository = {

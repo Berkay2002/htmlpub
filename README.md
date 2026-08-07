@@ -77,6 +77,15 @@ This repository is the plugin root. Its manifest is in `.codex-plugin/plugin.jso
 
 Share creation returns a human reader `url` and a public raw `contentUrl`. The raw link lets another agent retrieve the latest HTML without an htmlpub account or API token. Both are bearer links and remain valid until revoked or rotated.
 
+After these files are available on the selected Git ref, add and install the GitHub-backed marketplace:
+
+```bash
+codex plugin marketplace add Berkay2002/htmlpub --ref main
+codex plugin add htmlpub@htmlpub
+```
+
+Restart the ChatGPT desktop app and test the plugin in a new task so the installed skills are loaded.
+
 ## Claude Code plugin
 
 This repository is also a Claude Code plugin. From the repository root, load it for a local

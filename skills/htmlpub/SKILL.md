@@ -1,6 +1,6 @@
 ---
 name: htmlpub
-description: Route htmlpub CLI work to this plugin's skills. Use when Claude Code needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader and raw-content links, retrieve shared HTML, or manage document versions.
+description: Route htmlpub CLI work to this plugin's focused workflows. Use when an agent needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader and raw-content links, retrieve shared HTML, or manage document versions.
 ---
 
 # htmlpub workflow

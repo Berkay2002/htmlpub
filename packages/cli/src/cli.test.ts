@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { inspectHtmlFile } from "./html-file";
 import { loadConfig, resolveConfiguration } from "./config";
+import { parseBoundedInteger, resolveCollection } from "./command-input";
 
 const temporaryDirectories: string[] = [];
 afterEach(async () => Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))));
@@ -32,5 +33,25 @@ describe("the installed CLI input contract", () => {
     const directory = await mkdtemp(join(tmpdir(), "htmlpub-config-test-")); temporaryDirectories.push(directory);
     const saved = await loadConfig({ HTMLPUB_CONFIG_DIR: directory });
     expect(resolveConfiguration({}, saved)).toEqual({ token: undefined, endpoint: "http://localhost:3000", tokenSource: "missing", endpointSource: "default" });
+  });
+
+  it("maps agent artifact types to stable collection names", () => {
+    expect(resolveCollection("summary", undefined)).toBe("Summaries");
+    expect(resolveCollection("plan", undefined)).toBe("Plans");
+    expect(resolveCollection("review", undefined)).toBe("Reviews");
+    expect(resolveCollection("report", undefined)).toBe("Reports");
+    expect(resolveCollection(undefined, " Custom ")).toBe("Custom");
+  });
+
+  it("rejects ambiguous or unknown artifact collection input", () => {
+    expect(() => resolveCollection("plan", "Planning")).toThrow("either --type or --collection");
+    expect(() => resolveCollection("memo", undefined)).toThrow("Unknown artifact type");
+  });
+
+  it("validates bounded pagination and version integers", () => {
+    expect(parseBoundedInteger("1", "limit", { minimum: 1, maximum: 100 })).toBe(1);
+    expect(parseBoundedInteger("100", "limit", { minimum: 1, maximum: 100 })).toBe(100);
+    expect(() => parseBoundedInteger("101", "limit", { minimum: 1, maximum: 100 })).toThrow("between 1 and 100");
+    expect(() => parseBoundedInteger("1.5", "version", { minimum: 1 })).toThrow("integer");
   });
 });
