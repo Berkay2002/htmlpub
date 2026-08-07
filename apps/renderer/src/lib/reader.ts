@@ -1,4 +1,5 @@
 const READER_MARKER = 'data-htmlpub-reader="true"';
+const READER_VIEWPORT = '<meta name="viewport" content="width=device-width, initial-scale=1" data-htmlpub-reader-viewport="true">';
 
 const READER_BRIDGE_STYLES = `
 :root {
@@ -7,6 +8,7 @@ const READER_BRIDGE_STYLES = `
 
 body.htmlpub-reader-body {
   min-width: 0;
+  overflow-x: hidden;
   margin: 0;
   background: var(--reader-bg);
   color: var(--reader-ink);
@@ -24,6 +26,7 @@ body.htmlpub-reader-body {
   max-width: 100rem;
   margin-inline: auto;
   padding: clamp(0.75rem, 2vw, 1.5rem);
+  overflow-x: clip;
   color-scheme: light;
 }
 
@@ -68,8 +71,10 @@ body.htmlpub-reader-body {
   --color-primary: var(--reader-accent);
   --color-ring: var(--reader-accent);
   width: 100%;
+  min-width: 0;
   max-width: 72rem;
   margin-inline: auto;
+  overflow-wrap: anywhere;
 }
 
 .htmlpub-reader-shell[data-reader-scale="sm"] .typeset-docs {
@@ -148,6 +153,7 @@ body.htmlpub-reader-body {
   padding: 0.35rem 0.55rem;
   font: inherit;
   font-size: 0.75rem;
+  white-space: normal;
   cursor: pointer;
 }
 
@@ -319,6 +325,36 @@ body.htmlpub-reader-body {
 
   .htmlpub-reader-toolbar-group:last-child {
     width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .htmlpub-reader-toolbar-group:last-child .htmlpub-reader-control {
+    min-height: 2.5rem;
+  }
+
+  .htmlpub-reader-shell .typeset-docs > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .htmlpub-reader-shell .typeset-docs :where(section, article, main, header, footer, aside, div, figure, blockquote, ul, ol, li) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .htmlpub-reader-shell .typeset-docs :where(h1, h2, h3, h4, h5, h6) {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  .htmlpub-reader-shell .typeset-docs :where(img, video, svg, canvas, iframe) {
+    max-width: 100% !important;
+  }
+
+  .htmlpub-reader-shell .typeset-docs {
     overflow-x: auto;
   }
 
@@ -617,19 +653,22 @@ function escapeAttribute(value: string): string {
 }
 
 function injectReaderAssets(html: string, stylesheetHref: string): string {
-  const assets = `<link rel="stylesheet" href="${escapeAttribute(stylesheetHref)}" data-htmlpub-typeset="true">\n<style data-htmlpub-reader-style>${READER_BRIDGE_STYLES}</style>`;
-  const head = /<head\b[^>]*>/i.exec(html);
+  const viewportPattern = /<meta\b[^>]*\bname\s*=\s*(?:"viewport"|'viewport'|viewport)[^>]*>/i;
+  const hasViewport = viewportPattern.test(html);
+  const normalizedHtml = hasViewport ? html.replace(viewportPattern, READER_VIEWPORT) : html;
+  const assets = `${hasViewport ? "" : `${READER_VIEWPORT}\n`}<link rel="stylesheet" href="${escapeAttribute(stylesheetHref)}" data-htmlpub-typeset="true">\n<style data-htmlpub-reader-style>${READER_BRIDGE_STYLES}</style>`;
+  const head = /<head\b[^>]*>/i.exec(normalizedHtml);
   if (head) {
     const insertAt = head.index + head[0].length;
-    return `${html.slice(0, insertAt)}${assets}${html.slice(insertAt)}`;
+    return `${normalizedHtml.slice(0, insertAt)}${assets}${normalizedHtml.slice(insertAt)}`;
   }
 
-  const body = /<body\b[^>]*>/i.exec(html);
+  const body = /<body\b[^>]*>/i.exec(normalizedHtml);
   if (body) {
-    return `${html.slice(0, body.index)}${assets}${html.slice(body.index)}`;
+    return `${normalizedHtml.slice(0, body.index)}${assets}${normalizedHtml.slice(body.index)}`;
   }
 
-  return `${assets}${html}`;
+  return `${assets}${normalizedHtml}`;
 }
 
 function wrapBody(html: string, rawHref: string): string {

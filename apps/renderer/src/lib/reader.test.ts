@@ -8,6 +8,7 @@ describe("the artifact reader mode", () => {
     const readerHtml = applyReaderMode(html, "/typeset.css", "/render/ticket");
 
     expect(readerHtml).toContain('<link rel="stylesheet" href="/typeset.css" data-htmlpub-typeset="true">');
+    expect(readerHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1" data-htmlpub-reader-viewport="true">');
     expect(readerHtml).toContain('<style data-htmlpub-reader-style>');
     expect(readerHtml).toContain('<div class="htmlpub-reader-shell" data-htmlpub-reader="true"');
     expect(readerHtml).toContain('<article class="typeset typeset-docs max-w-[42em]"');
@@ -26,5 +27,14 @@ describe("the artifact reader mode", () => {
     const html = '<html><body><div class="typeset typeset-docs" data-htmlpub-reader="true">Already styled</div></body></html>';
 
     expect(applyReaderMode(html)).toBe(html);
+  });
+
+  it("normalizes an existing viewport for narrow reader surfaces", () => {
+    const html = '<html><head><meta name="viewport" content="width=1200"></head><body><p>Content</p></body></html>';
+    const readerHtml = applyReaderMode(html);
+
+    expect(readerHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1" data-htmlpub-reader-viewport="true">');
+    expect(readerHtml).not.toContain('content="width=1200"');
+    expect(readerHtml.match(/data-htmlpub-reader-viewport/g)).toHaveLength(1);
   });
 });
