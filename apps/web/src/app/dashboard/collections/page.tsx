@@ -5,7 +5,7 @@ import { getRepository } from "@/lib/repository";
 import { Badge } from "@htmlpub/ui/components/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@htmlpub/ui/components/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@htmlpub/ui/components/empty";
-import { buttonVariants } from "@htmlpub/ui/components/button";
+import { buttonVariants } from "@htmlpub/ui/lib/button-variants";
 
 export default async function CollectionsPage() {
   const ownerId = await requireOwnerPage();

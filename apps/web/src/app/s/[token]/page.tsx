@@ -5,7 +5,7 @@ import { renderUrl } from "@/lib/render";
 import { ReaderFrame } from "@/components/reader-frame";
 import { Alert, AlertDescription } from "@htmlpub/ui/components/alert";
 import { Badge } from "@htmlpub/ui/components/badge";
-import { buttonVariants } from "@htmlpub/ui/components/button";
+import { buttonVariants } from "@htmlpub/ui/lib/button-variants";
 import { Card } from "@htmlpub/ui/components/card";
 
 type Props = { params: Promise<{ token: string }> };

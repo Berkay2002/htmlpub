@@ -60,7 +60,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarGroup>
 
           <SidebarGroup className="mt-auto">
-            <SidebarGroupLabel>Publish</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
                 <Button onPress={() => setPublishing(true)} className="w-full justify-start gap-2 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0" size="lg">
@@ -97,7 +96,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Breadcrumb>
           </div>
           <div className="flex items-center gap-2">
-            <kbd className="hidden rounded-lg border border-border bg-muted px-2 py-1 text-[11px] font-medium lg:inline-flex">⌘ B</kbd>
             <Button size="sm" className="rounded-xl" onPress={() => setPublishing(true)}><UploadCloud data-icon="inline-start" />Publish HTML</Button>
           </div>
         </header>

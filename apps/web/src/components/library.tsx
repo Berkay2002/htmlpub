@@ -2,7 +2,7 @@ import type { DocumentSummary } from "@htmlpub/core";
 import { FileCode2, Globe2, LockKeyhole, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@htmlpub/ui/components/badge";
-import { buttonVariants } from "@htmlpub/ui/components/button";
+import { buttonVariants } from "@htmlpub/ui/lib/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@htmlpub/ui/components/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@htmlpub/ui/components/empty";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@htmlpub/ui/components/table";
@@ -34,14 +34,12 @@ export function LibraryTable({ documents, selectedSlug }: { documents: DocumentS
         </CardContent>
       ) : (
         <Table aria-label="Published documents">
-          <TableHeader>
-            <TableRow className="border-border/70 bg-muted/35 hover:bg-muted/35">
-              <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Document</TableHead>
-              <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:table-cell">Collection</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Versions</TableHead>
-              <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:table-cell">Updated</TableHead>
-              <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Sharing</TableHead>
-            </TableRow>
+          <TableHeader className="border-border/70 bg-muted/35">
+            <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Document</TableHead>
+            <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:table-cell">Collection</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Versions</TableHead>
+            <TableHead className="hidden text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:table-cell">Updated</TableHead>
+            <TableHead className="px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:px-5">Sharing</TableHead>
           </TableHeader>
           <TableBody>
             {documents.map((document) => {
