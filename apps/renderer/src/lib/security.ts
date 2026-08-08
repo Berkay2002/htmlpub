@@ -20,7 +20,7 @@ export function rendererHeaders(appOrigin = process.env.APP_ORIGIN ?? "http://lo
       "object-src 'none'",
       "base-uri 'none'",
       "form-action 'none'",
-      `frame-ancestors ${appOrigin}`
+      `frame-ancestors 'self' ${appOrigin}`
     ].join("; "),
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff",

@@ -293,8 +293,8 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
       return getOrCreateReviewStatus(ownerId, slug, roundId);
     },
 
-    async addReviewComment(ownerId: string, slug: string, input: CreateReviewComment) {
-      const review = await getOrCreateReviewStatus(ownerId, slug);
+    async addReviewComment(ownerId: string, slug: string, input: CreateReviewComment, expectedRoundId?: string) {
+      const review = await getOrCreateReviewStatus(ownerId, slug, expectedRoundId);
       if (review.status !== "open") throw new AppError("review_closed", "This review round is no longer open", 409);
       await db.transaction(async (tx) => {
         const [openRound] = await tx.select({ id: reviewRounds.id }).from(reviewRounds)
@@ -315,8 +315,8 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
       return getOrCreateReviewStatus(ownerId, slug, review.roundId);
     },
 
-    async decideReview(ownerId: string, slug: string, decision: ReviewDecision) {
-      const review = await getOrCreateReviewStatus(ownerId, slug);
+    async decideReview(ownerId: string, slug: string, decision: ReviewDecision, expectedRoundId?: string) {
+      const review = await getOrCreateReviewStatus(ownerId, slug, expectedRoundId);
       if (review.status !== "open") throw new AppError("review_closed", "This review round is no longer open", 409);
       const statusByDecision = {
         accept: "accepted",

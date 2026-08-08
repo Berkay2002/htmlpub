@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, createOpaqueToken, createRenderTicket, createReviewCommentSchema, createShareUrls, normalizeSlug, publishRequestSchema, reviewDecisionSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
+import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, REVIEW_TICKET_TTL_MS, createOpaqueToken, createRenderTicket, createReviewCommentSchema, createReviewTicket, createShareUrls, normalizeSlug, publishRequestSchema, reviewDecisionSchema, sha256, tokenMatches, verifyRenderTicket, verifyReviewTicket } from "./index";
 
 describe("the publishing contract", () => {
   it("normalizes a filename into a stable URL slug", () => {
@@ -42,6 +42,19 @@ describe("the publishing contract", () => {
   it("rejects a render ticket changed by the embedded document", () => {
     const ticket = createRenderTicket("4a87a1cc-f3f7-4f25-ae22-12f38554dada", "test-secret", 1_000);
     expect(() => verifyRenderTicket(`${ticket}x`, "test-secret", 2_000)).toThrow("Invalid render ticket");
+  });
+
+  it("creates a short-lived review capability bound to one owner, document, version, and round", () => {
+    const input = {
+      ownerId: "user_owner",
+      slug: "launch-plan",
+      versionId: "4a87a1cc-f3f7-4f25-ae22-12f38554dada",
+      roundId: "13ab755f-d61c-4b3f-825d-327260c4a3ee"
+    };
+    const ticket = createReviewTicket(input, "test-secret", 1_000);
+    expect(verifyReviewTicket(ticket, "test-secret", 1_000 + REVIEW_TICKET_TTL_MS - 1)).toEqual(expect.objectContaining(input));
+    expect(() => verifyReviewTicket(ticket, "test-secret", 1_000 + REVIEW_TICKET_TTL_MS)).toThrow("expired");
+    expect(() => verifyReviewTicket(`${ticket}x`, "test-secret", 2_000)).toThrow("Invalid review ticket");
   });
 
   it("uses a known SHA-256 representation for upload identity", () => {

@@ -3,6 +3,7 @@
   "compilerOptions": {
     "jsx": "preserve",
     "noEmit": true,
+    "types": ["node"],
     "exactOptionalPropertyTypes": false,
     "baseUrl": ".",
     "resolvePackageJsonImports": true,

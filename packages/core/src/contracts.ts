@@ -3,6 +3,7 @@ import { z } from "zod";
 export const MAX_HTML_BYTES = 10 * 1024 * 1024;
 export const UPLOAD_TTL_MS = 10 * 60 * 1000;
 export const RENDER_TICKET_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const REVIEW_TICKET_TTL_MS = 24 * 60 * 60 * 1000;
 
 export const publishRequestSchema = z.object({
   slug: z.string().min(1).max(120),
@@ -106,4 +107,12 @@ export type ReviewStatus = {
   comments: ReviewComment[];
   latestEventId: number | null;
   decidedAt: string | null;
+};
+
+export type ReviewWorkspaceAccess = {
+  title: string;
+  readerUrl: string;
+  rawUrl: string;
+  dashboardUrl: string;
+  review: ReviewStatus;
 };

@@ -12,7 +12,7 @@ describe("the renderer response boundary", () => {
   it("prevents referrer leakage and limits embedding to the main app", () => {
     const headers = new Headers(rendererHeaders("https://app.example.com"));
     expect(headers.get("referrer-policy")).toBe("no-referrer");
-    expect(headers.get("content-security-policy")).toContain("frame-ancestors https://app.example.com");
+    expect(headers.get("content-security-policy")).toContain("frame-ancestors 'self' https://app.example.com");
     expect(headers.get("content-security-policy")).toContain("style-src 'unsafe-inline' 'self' https:");
     expect(headers.get("content-security-policy")).toContain("form-action 'none'");
   });

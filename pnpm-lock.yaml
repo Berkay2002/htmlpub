@@ -26,6 +26,9 @@ importers:
       '@htmlpub/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@htmlpub/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@vercel/blob':
         specifier: ^2.7.0
         version: 2.7.0
@@ -38,13 +41,22 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       turndown:
         specifier: ^7.2.4
         version: 7.2.4
       turndown-plugin-gfm:
         specifier: ^1.0.2
         version: 1.0.2
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.1.0
+        version: 4.3.3
       '@types/node':
         specifier: ^24.10.0
         version: 24.13.3
@@ -208,6 +220,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.7.0
         version: 1.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@htmlpub/core':
+        specifier: workspace:*
+        version: link:../core
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
