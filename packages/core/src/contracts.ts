@@ -4,6 +4,7 @@ export const MAX_HTML_BYTES = 10 * 1024 * 1024;
 export const UPLOAD_TTL_MS = 10 * 60 * 1000;
 export const RENDER_TICKET_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const REVIEW_TICKET_TTL_MS = 24 * 60 * 60 * 1000;
+export const REVIEW_WATCH_LEASE_MS = 10_000;
 
 export const publishRequestSchema = z.object({
   slug: z.string().min(1).max(120),
@@ -85,6 +86,8 @@ export const reviewDecisionSchema = z.enum(["accept", "request_revision", "cance
 export const decideReviewSchema = z.object({ decision: reviewDecisionSchema });
 export const reviewRoundIdSchema = z.string().uuid();
 export const reviewRoundStatusSchema = z.enum(["open", "accepted", "revision_requested", "cancelled", "superseded"]);
+export const watchReviewSchema = z.object({ roundId: z.string().uuid().optional() });
+export const acknowledgeReviewSchema = z.object({ roundId: z.string().uuid() });
 
 export type ReviewSelection = z.infer<typeof reviewSelectionSchema>;
 export type CreateReviewComment = z.infer<typeof createReviewCommentSchema>;
@@ -107,7 +110,17 @@ export type ReviewStatus = {
   comments: ReviewComment[];
   latestEventId: number | null;
   decidedAt: string | null;
+  agent: {
+    connected: boolean;
+    acknowledgedAt: string | null;
+  };
 };
+
+export function reviewWatcherIsActive(status: ReviewRoundStatus, watcherSeenAt: Date | string | null, now = Date.now()): boolean {
+  if (status !== "open" || watcherSeenAt === null) return false;
+  const seenAt = watcherSeenAt instanceof Date ? watcherSeenAt.getTime() : Date.parse(watcherSeenAt);
+  return Number.isFinite(seenAt) && seenAt >= now - REVIEW_WATCH_LEASE_MS;
+}
 
 export type ReviewWorkspaceAccess = {
   title: string;

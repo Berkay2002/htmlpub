@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, ilike, inArray, isNotNull, isNull, lt, notExists, or, sql } from "drizzle-orm";
-import { AppError, createOpaqueToken, createShareUrls, normalizeSlug, sha256, type BlobMetadata, type CreateReviewComment, type DocumentSummary, type PendingUpload, type PublishRepository, type PublishRequest, type PublishResult, type ReviewDecision, type ReviewRoundStatus, type ReviewStatus, type ShareResult } from "@htmlpub/core";
+import { AppError, createOpaqueToken, createShareUrls, normalizeSlug, reviewWatcherIsActive, sha256, type BlobMetadata, type CreateReviewComment, type DocumentSummary, type PendingUpload, type PublishRepository, type PublishRequest, type PublishResult, type ReviewDecision, type ReviewRoundStatus, type ReviewStatus, type ShareResult } from "@htmlpub/core";
 import type { HtmlpubDb } from "./client";
 import { accounts, apiTokens, collections, documents, documentVersions, reviewComments, reviewEvents, reviewRounds, shareLinks, uploadSessions } from "./schema";
 
@@ -90,7 +90,11 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
         createdAt: comment.createdAt.toISOString()
       })),
       latestEventId: latestEvent?.id ?? null,
-      decidedAt: round.decidedAt?.toISOString() ?? null
+      decidedAt: round.decidedAt?.toISOString() ?? null,
+      agent: {
+        connected: reviewWatcherIsActive(round.status, round.watcherSeenAt),
+        acknowledgedAt: round.agentAcknowledgedAt?.toISOString() ?? null
+      }
     };
   }
 
@@ -293,13 +297,29 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
       return getOrCreateReviewStatus(ownerId, slug, roundId);
     },
 
+    async watchReview(ownerId: string, slug: string, roundId?: string) {
+      const review = await getOrCreateReviewStatus(ownerId, slug, roundId);
+      await db.update(reviewRounds).set({ watcherSeenAt: new Date() }).where(eq(reviewRounds.id, review.roundId));
+      return getOrCreateReviewStatus(ownerId, slug, review.roundId);
+    },
+
+    async acknowledgeReview(ownerId: string, slug: string, roundId: string) {
+      const review = await getOrCreateReviewStatus(ownerId, slug, roundId);
+      if (review.status === "open") throw new AppError("review_open", "An open review cannot be acknowledged", 409);
+      await db.update(reviewRounds).set({ agentAcknowledgedAt: sql`coalesce(${reviewRounds.agentAcknowledgedAt}, ${new Date()})` })
+        .where(eq(reviewRounds.id, review.roundId));
+      return getOrCreateReviewStatus(ownerId, slug, review.roundId);
+    },
+
     async addReviewComment(ownerId: string, slug: string, input: CreateReviewComment, expectedRoundId?: string) {
       const review = await getOrCreateReviewStatus(ownerId, slug, expectedRoundId);
       if (review.status !== "open") throw new AppError("review_closed", "This review round is no longer open", 409);
+      if (!review.agent.connected) throw new AppError("agent_not_connected", "No agent is currently waiting for this review", 409);
       await db.transaction(async (tx) => {
-        const [openRound] = await tx.select({ id: reviewRounds.id }).from(reviewRounds)
+        const [openRound] = await tx.select({ id: reviewRounds.id, watcherSeenAt: reviewRounds.watcherSeenAt }).from(reviewRounds)
           .where(and(eq(reviewRounds.id, review.roundId), eq(reviewRounds.status, "open"))).for("update").limit(1);
         if (!openRound) throw new AppError("review_closed", "This review round is no longer open", 409);
+        if (!reviewWatcherIsActive("open", openRound.watcherSeenAt)) throw new AppError("agent_not_connected", "No agent is currently waiting for this review", 409);
         const [comment] = await tx.insert(reviewComments).values({
           reviewRoundId: review.roundId,
           body: input.body,
@@ -318,6 +338,7 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
     async decideReview(ownerId: string, slug: string, decision: ReviewDecision, expectedRoundId?: string) {
       const review = await getOrCreateReviewStatus(ownerId, slug, expectedRoundId);
       if (review.status !== "open") throw new AppError("review_closed", "This review round is no longer open", 409);
+      if (!review.agent.connected) throw new AppError("agent_not_connected", "No agent is currently waiting for this review", 409);
       const statusByDecision = {
         accept: "accepted",
         request_revision: "revision_requested",
@@ -325,8 +346,11 @@ export function createRepository(db: HtmlpubDb, { dashboardOrigin }: RepositoryO
       } as const satisfies Record<ReviewDecision, Exclude<ReviewRoundStatus, "open" | "superseded">>;
       const status = statusByDecision[decision];
       await db.transaction(async (tx) => {
-        const [roundRecord] = await tx.select({ documentId: reviewRounds.documentId }).from(reviewRounds).where(eq(reviewRounds.id, review.roundId)).limit(1);
+        const [roundRecord] = await tx.select({ documentId: reviewRounds.documentId, status: reviewRounds.status, watcherSeenAt: reviewRounds.watcherSeenAt })
+          .from(reviewRounds).where(eq(reviewRounds.id, review.roundId)).for("update").limit(1);
         if (!roundRecord) throw new AppError("review_not_found", "Review round not found", 404);
+        if (roundRecord.status !== "open") throw new AppError("review_closed", "This review round is no longer open", 409);
+        if (!reviewWatcherIsActive(roundRecord.status, roundRecord.watcherSeenAt)) throw new AppError("agent_not_connected", "No agent is currently waiting for this review", 409);
         const [closed] = await tx.update(reviewRounds).set({ status, decidedAt: new Date() })
           .where(and(eq(reviewRounds.id, review.roundId), eq(reviewRounds.status, "open"))).returning({ id: reviewRounds.id });
         if (!closed) throw new AppError("review_closed", "This review round is no longer open", 409);

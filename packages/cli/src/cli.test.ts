@@ -89,4 +89,26 @@ describe("the installed CLI input contract", () => {
     });
     expect(result).toEqual({ roundId: "round-1", status: "open", latestEventId: null, timedOut: true });
   });
+
+  it("acknowledges only after receiving a terminal review state", async () => {
+    const events: string[] = [];
+    const states = [
+      { roundId: "round-1", status: "open" as const, latestEventId: null },
+      { roundId: "round-1", status: "accepted" as const, latestEventId: 8 }
+    ];
+    const result = await waitForReview(async () => {
+      const state = states.shift()!;
+      events.push(`read:${state.status}`);
+      return state;
+    }, {
+      intervalMs: 1,
+      sleep: async () => undefined,
+      acknowledge: async (status) => {
+        events.push(`ack:${status.status}`);
+        return status;
+      }
+    });
+    expect(result).toEqual(expect.objectContaining({ status: "accepted", timedOut: false }));
+    expect(events).toEqual(["read:open", "read:accepted", "ack:accepted"]);
+  });
 });

@@ -28,7 +28,7 @@ htmlpub --json documents get report
 htmlpub --json review wait report
 ```
 
-Run the workflow yourself and apply the completion criterion in `publish-html-artifacts`; an open review round is still active work.
+Run the workflow yourself and apply the terminal evidence gate in `publish-html-artifacts`; only a current-round `accepted` or `cancelled` result from `review wait` completes the review loop. Keep one blocking `review wait` process running without a CLI timeout or shell/tool deadline because it is the agent-presence heartbeat. Resume the same running-process handle when the execution tool yields one. If it fails or the handle is lost, retry the same blocking wait after a bounded delay. Status polling is diagnostic and never replaces the wait.
 
 Discover documents before changing sharing:
 

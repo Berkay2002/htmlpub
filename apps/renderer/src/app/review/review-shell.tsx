@@ -41,6 +41,7 @@ export function ReviewShell() {
     rawSrc={state.access.rawUrl}
     initialReview={state.access.review}
     reviewPath="/api/review"
+    statusPath="/api/review/status"
     requestHeaders={{ authorization: `Bearer ${state.ticket}` }}
     dashboardHref={state.access.dashboardUrl}
     variant="fullscreen"

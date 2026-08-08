@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, REVIEW_TICKET_TTL_MS, createOpaqueToken, createRenderTicket, createReviewCommentSchema, createReviewTicket, createShareUrls, normalizeSlug, publishRequestSchema, reviewDecisionSchema, sha256, tokenMatches, verifyRenderTicket, verifyReviewTicket } from "./index";
+import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, REVIEW_TICKET_TTL_MS, REVIEW_WATCH_LEASE_MS, createOpaqueToken, createRenderTicket, createReviewCommentSchema, createReviewTicket, createShareUrls, normalizeSlug, publishRequestSchema, reviewDecisionSchema, reviewWatcherIsActive, sha256, tokenMatches, verifyRenderTicket, verifyReviewTicket } from "./index";
 
 describe("the publishing contract", () => {
   it("normalizes a filename into a stable URL slug", () => {
@@ -81,5 +81,14 @@ describe("the publishing contract", () => {
     expect(createReviewCommentSchema.safeParse({ body: "Change this", selection: { exact: "text", start: 10, end: 5 } }).success).toBe(false);
     expect(reviewDecisionSchema.safeParse("approve").success).toBe(false);
     expect(reviewDecisionSchema.parse("accept")).toBe("accept");
+  });
+
+  it("treats only a recent open-round heartbeat as a connected agent", () => {
+    const now = Date.parse("2026-08-08T14:00:00.000Z");
+    expect(reviewWatcherIsActive("open", new Date(now - REVIEW_WATCH_LEASE_MS + 1), now)).toBe(true);
+    expect(reviewWatcherIsActive("open", new Date(now - REVIEW_WATCH_LEASE_MS), now)).toBe(true);
+    expect(reviewWatcherIsActive("open", new Date(now - REVIEW_WATCH_LEASE_MS - 1), now)).toBe(false);
+    expect(reviewWatcherIsActive("accepted", new Date(now), now)).toBe(false);
+    expect(reviewWatcherIsActive("open", null, now)).toBe(false);
   });
 });

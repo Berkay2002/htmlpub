@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Check, ExternalLink, MessageSquarePlus, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { ApiEnvelope, ReviewDecision, ReviewStatus } from "@htmlpub/core";
@@ -11,9 +11,10 @@ import { ReaderFrame, type ReaderSelection } from "#components/reader-frame";
 import { Spinner } from "#components/spinner";
 import { Textarea } from "#components/textarea";
 import { cn } from "#lib/utils";
+import { mergePolledReview } from "#lib/review-state";
 
-const statusLabels: Record<ReviewStatus["status"], string> = {
-  open: "Awaiting review",
+const decisionLabels: Record<ReviewStatus["status"], string> = {
+  open: "Open",
   accepted: "Accepted",
   revision_requested: "Revision requested",
   cancelled: "Cancelled",
@@ -38,6 +39,7 @@ export type ReviewWorkspaceProps = {
   rawSrc: string;
   initialReview: ReviewStatus;
   reviewPath: string;
+  statusPath?: string;
   requestHeaders?: HeadersInit;
   variant?: "embedded" | "fullscreen";
   dashboardHref?: string;
@@ -50,6 +52,7 @@ export function ReviewWorkspace({
   rawSrc,
   initialReview,
   reviewPath,
+  statusPath = reviewPath,
   requestHeaders,
   variant = "embedded",
   dashboardHref,
@@ -60,7 +63,23 @@ export function ReviewWorkspace({
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState<"comment" | ReviewDecision | null>(null);
   const reviewOpen = review.status === "open";
+  const agentConnected = reviewOpen && review.agent.connected;
   const receiveSelection = useCallback((next: ReaderSelection | null) => setSelection(next), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+    const controller = new AbortController();
+    async function refreshStatus() {
+      try {
+        const updated = await readApi<ReviewStatus>(await fetch(statusPath, { headers: new Headers(requestHeaders), cache: "no-store", signal: controller.signal }));
+        if (!cancelled) setReview((current) => mergePolledReview(current, updated));
+      } catch { /* The current state remains usable during a transient refresh failure. */ }
+      finally { if (!cancelled) timer = window.setTimeout(() => void refreshStatus(), 3_000); }
+    }
+    timer = window.setTimeout(() => void refreshStatus(), 3_000);
+    return () => { cancelled = true; controller.abort(); if (timer !== undefined) window.clearTimeout(timer); };
+  }, [requestHeaders, statusPath]);
 
   function applyUpdate(updated: ReviewStatus) {
     setReview(updated);
@@ -96,7 +115,7 @@ export function ReviewWorkspace({
         body: JSON.stringify({ decision })
       }));
       applyUpdate(updated);
-      toast.success(decision === "accept" ? "Version accepted" : decision === "request_revision" ? "Revision requested" : "Review cancelled");
+      toast.success(decision === "accept" ? "Decision recorded: version accepted" : decision === "request_revision" ? "Decision recorded: revision requested" : "Decision recorded: review cancelled");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Review decision failed");
     } finally {
@@ -117,21 +136,21 @@ export function ReviewWorkspace({
           "document-preview overflow-hidden rounded-2xl border border-border bg-muted shadow-sm",
           variant === "embedded" ? "h-[min(68svh,720px)] min-h-[min(68svh,720px)]" : "h-[62svh] min-h-[32rem] xl:h-full xl:min-h-0"
         )}
-        {...(reviewOpen ? { onSelection: receiveSelection } : {})}
+        {...(agentConnected ? { onSelection: receiveSelection } : {})}
       />
 
       <Card className="h-fit rounded-2xl border-border/80 bg-card/95 shadow-sm xl:sticky xl:top-6">
         <CardHeader className="border-b border-border/70 px-5 py-4">
-          <div className="flex items-center justify-between gap-3"><CardTitle className="text-sm">Review v{review.version}</CardTitle><Badge variant={reviewOpen ? "secondary" : "outline"} className="rounded-lg text-[10px]">{statusLabels[review.status]}</Badge></div>
-          <CardDescription className="mt-1 text-xs">Highlight text in the reader to leave an anchored comment.</CardDescription>
+          <div className="flex items-center justify-between gap-3"><CardTitle className="text-sm">Review v{review.version}</CardTitle><Badge variant={agentConnected ? "secondary" : "outline"} className="rounded-lg text-[10px]">{review.agent.acknowledgedAt ? "Agent received" : agentConnected ? "Agent connected" : reviewOpen ? "No agent connected" : "Decision recorded"}</Badge></div>
+          <CardDescription className="mt-1 text-xs">{agentConnected ? "The agent is waiting. Highlight text to leave an anchored comment." : reviewOpen ? "Actions become available while an agent is waiting for this review." : `${decisionLabels[review.status]}.`}</CardDescription>
         </CardHeader>
 
         <CardContent className="grid gap-4 px-5 py-5">
-          {reviewOpen && selection ? <div className="grid gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3">
+          {agentConnected && selection ? <div className="grid gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3">
             <div><span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Selected text</span><blockquote className="mt-1 line-clamp-4 border-l-2 border-primary/40 pl-3 text-xs leading-relaxed">{selection.exact}</blockquote>{selection.heading ? <span className="mt-2 block text-[11px] text-muted-foreground">Under “{selection.heading}”</span> : null}</div>
             <Textarea value={body} onChange={(event) => setBody(event.target.value)} placeholder="What should change?" aria-label="Review comment" />
             <div className="flex justify-end gap-2"><Button variant="ghost" size="sm" onPress={() => { setSelection(null); setBody(""); }} isDisabled={busy !== null}>Discard</Button><Button size="sm" onPress={() => void addComment()} isDisabled={!body.trim() || busy !== null}>{busy === "comment" ? <Spinner data-icon="inline-start" /> : <MessageSquarePlus data-icon="inline-start" />}{busy === "comment" ? "Adding" : "Add comment"}</Button></div>
-          </div> : reviewOpen ? <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">Select a word, sentence, heading, or paragraph in the reader.</p> : null}
+          </div> : agentConnected ? <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">Select a word, sentence, heading, or paragraph in the reader.</p> : reviewOpen ? <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">No agent is currently waiting for this review. Resume the agent task or start <code>htmlpub review wait</code> to continue.</p> : <p className="rounded-xl border border-border bg-muted/30 px-3 py-4 text-xs text-muted-foreground">{review.agent.acknowledgedAt ? "The agent received this decision and its comments. You can close this page while it continues." : "Your decision and comments are saved. Waiting for an agent to reconnect and retrieve them."}</p>}
 
           <div className="grid gap-3">
             <div className="flex items-center justify-between"><h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Comments</h2><span className="text-xs text-muted-foreground">{review.comments.length}</span></div>
@@ -143,7 +162,7 @@ export function ReviewWorkspace({
           </div>
         </CardContent>
 
-        {reviewOpen ? <CardFooter className="flex flex-wrap gap-2 px-5 py-4">
+        {agentConnected ? <CardFooter className="flex flex-wrap gap-2 px-5 py-4">
           <Button size="sm" onPress={() => void decide("accept")} isDisabled={busy !== null}>{busy === "accept" ? <Spinner data-icon="inline-start" /> : <Check data-icon="inline-start" />}Accept</Button>
           <Button variant="outline" size="sm" onPress={() => void decide("request_revision")} isDisabled={busy !== null}>{busy === "request_revision" ? <Spinner data-icon="inline-start" /> : <RefreshCw data-icon="inline-start" />}Request revision</Button>
           <Button variant="ghost" size="sm" className="ml-auto text-destructive hover:text-destructive" onPress={() => void decide("cancel")} isDisabled={busy !== null}>{busy === "cancel" ? <Spinner data-icon="inline-start" /> : <XCircle data-icon="inline-start" />}Cancel</Button>

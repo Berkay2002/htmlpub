@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import open from "open";
-import { normalizeSlug, type DocumentSummary, type PublishResult, type ReviewStatus, type ShareResult, type StartUploadResult } from "@htmlpub/core";
+import { REVIEW_WATCH_LEASE_MS, normalizeSlug, type DocumentSummary, type PublishResult, type ReviewStatus, type ShareResult, type StartUploadResult } from "@htmlpub/core";
 import { HtmlpubApiClient } from "./api-client";
 import { parseBoundedInteger, parseDurationMs, resolveCollection } from "./command-input";
 import { loadConfig, promptSecret, resolveConfiguration, saveConfig } from "./config";
@@ -140,9 +140,18 @@ function reviewStatusPath(slug: string, roundId?: string): string {
   return roundId ? `${path}?roundId=${encodeURIComponent(roundId)}` : path;
 }
 
+function reviewWatchPath(slug: string): string {
+  return `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}/review/watch`;
+}
+
+function reviewAcknowledgePath(slug: string): string {
+  return `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}/review/acknowledge`;
+}
+
 function reviewStatusText(review: ReviewStatus): string {
   const comments = review.comments.length === 1 ? "1 comment" : `${review.comments.length} comments`;
-  return `${review.title} v${review.version}\nReview: ${review.status}\nComments: ${comments}\nRound: ${review.roundId}${review.latestEventId === null ? "" : `\nEvent cursor: ${review.latestEventId}`}`;
+  const handoff = review.agent?.acknowledgedAt ? "received by agent" : review.agent?.connected ? "agent connected" : "no agent connected";
+  return `${review.title} v${review.version}\nReview: ${review.status}\nHandoff: ${handoff}\nComments: ${comments}\nRound: ${review.roundId}${review.latestEventId === null ? "" : `\nEvent cursor: ${review.latestEventId}`}`;
 }
 
 const reviewCommand = program.command("review").description("Inspect or wait for an owner decision on a published document.");
@@ -156,11 +165,18 @@ reviewCommand.command("wait").description("Wait until the owner accepts, request
   .option("--timeout <duration>", "return an open timedOut result after a duration such as 60s or 5m")
   .option("--interval <duration>", "polling interval", "2s")
   .action(async (slug: string, options: { timeout?: string; interval: string }) => {
-    const intervalMs = parseDurationMs(options.interval, "interval", { minimum: 250, maximum: 60_000 });
+    const intervalMs = parseDurationMs(options.interval, "interval", { minimum: 250, maximum: REVIEW_WATCH_LEASE_MS / 2 });
     const timeoutMs = options.timeout === undefined ? undefined : parseDurationMs(options.timeout, "timeout", { minimum: 250, maximum: 24 * 60 * 60 * 1_000 });
     const { client } = await configuredClient();
     printProgress(`Waiting for an owner decision on ${normalizeSlug(slug)}…`, jsonMode());
-    const result = await waitForReview((roundId) => client.request<ReviewStatus>("GET", reviewStatusPath(slug, roundId)), { intervalMs, ...(timeoutMs === undefined ? {} : { timeoutMs }) });
+    const result = await waitForReview(
+      (roundId) => client.request<ReviewStatus>("POST", reviewWatchPath(slug), roundId ? { roundId } : {}),
+      {
+        intervalMs,
+        acknowledge: (status) => client.request<ReviewStatus>("POST", reviewAcknowledgePath(slug), { roundId: status.roundId }),
+        ...(timeoutMs === undefined ? {} : { timeoutMs })
+      }
+    );
     const human = result.timedOut ? `${reviewStatusText(result)}\nNo decision arrived before the timeout.` : reviewStatusText(result);
     printSuccess(result, jsonMode(), human);
   });

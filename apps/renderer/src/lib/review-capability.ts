@@ -55,6 +55,10 @@ export async function getReviewWorkspace(request: Request): Promise<ReviewWorksp
   };
 }
 
+export async function getReviewStatus(request: Request): Promise<ReviewStatus> {
+  return (await bindCapability(request)).review;
+}
+
 export async function addReviewComment(request: Request, input: CreateReviewComment): Promise<ReviewStatus> {
   const { payload } = await bindCapability(request);
   return getRepository().addReviewComment(payload.ownerId, payload.slug, input, payload.roundId);

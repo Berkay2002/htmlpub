@@ -66,6 +66,8 @@ export const reviewRounds = pgTable("review_rounds", {
   versionId: uuid("version_id").notNull().references(() => documentVersions.id, { onDelete: "cascade" }),
   status: text("status").$type<ReviewRoundStatus>().default("open").notNull(),
   decidedAt: timestamp("decided_at", { withTimezone: true }),
+  watcherSeenAt: timestamp("watcher_seen_at", { withTimezone: true }),
+  agentAcknowledgedAt: timestamp("agent_acknowledged_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   uniqueIndex("review_rounds_open_document_unique").on(table.documentId).where(sql`${table.status} = 'open'`),
