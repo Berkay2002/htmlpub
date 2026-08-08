@@ -5,7 +5,7 @@ import { getRepository } from "@/lib/repository";
 import { createReviewUrl, renderUrl } from "@/lib/render";
 import { DocumentActions, RestoreButton } from "@/components/document-actions";
 import { DocumentReview } from "@/components/document-review";
-import { CopyMarkdownButton } from "@/components/share-markdown-actions";
+import { CopyMarkdownButton, ShareToAgentButton } from "@/components/share-markdown-actions";
 import { Badge } from "@htmlpub/ui/components/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@htmlpub/ui/components/breadcrumb";
 import { buttonVariants } from "@htmlpub/ui/lib/button-variants";
@@ -32,7 +32,7 @@ export default async function DocumentPage({ params }: Props) {
           <Breadcrumb className="mb-4"><BreadcrumbList><BreadcrumbItem><BreadcrumbLink href="/dashboard">Library</BreadcrumbLink></BreadcrumbItem><BreadcrumbItem><BreadcrumbPage>{document.title}</BreadcrumbPage></BreadcrumbItem></BreadcrumbList></Breadcrumb>
           <div className="flex items-start gap-3"><span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileCode2 /></span><div className="min-w-0"><h1 className="truncate text-3xl font-semibold tracking-tight sm:text-4xl">{document.title}</h1><p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><Badge variant="outline" className="rounded-lg font-normal">{document.collection ?? "Unfiled"}</Badge><span>•</span><span>current v{document.currentVersion}</span><span>•</span><span>updated {dateFormatter.format(new Date(document.updatedAt))}</span></p></div></div>
         </div>
-        <div className="flex flex-wrap items-center gap-2"><CopyMarkdownButton markdownUrl={markdownUrl} /><a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={reviewUrl} target="_blank" rel="noreferrer"><ExternalLink data-icon="inline-start" />Open fullscreen review</a></div>
+        <div className="flex flex-wrap items-center gap-2"><CopyMarkdownButton markdownUrl={markdownUrl} /><ShareToAgentButton title={document.title} slug={document.slug} rawUrl={rawPreviewUrl} /><a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={reviewUrl} target="_blank" rel="noreferrer"><ExternalLink data-icon="inline-start" />Open fullscreen review</a></div>
       </header>
 
       <DocumentReview slug={document.slug} title={document.title} src={previewUrl} rawSrc={rawPreviewUrl} initialReview={review} />

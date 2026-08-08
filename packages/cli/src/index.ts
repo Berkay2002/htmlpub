@@ -1,9 +1,12 @@
 import { Command } from "commander";
+import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import open from "open";
 import { REVIEW_WATCH_LEASE_MS, normalizeSlug, type DocumentSummary, type PublishResult, type ReviewStatus, type ShareResult, type StartUploadResult } from "@htmlpub/core";
 import { HtmlpubApiClient } from "./api-client";
 import { parseBoundedInteger, parseDurationMs, resolveCollection } from "./command-input";
 import { loadConfig, promptSecret, resolveConfiguration, saveConfig } from "./config";
+import { documentContentPath, parseDocumentContentFormat } from "./document-content";
 import { inspectHtmlFile } from "./html-file";
 import { printFailure, printProgress, printSuccess } from "./output";
 import { waitForReview } from "./review-wait";
@@ -114,6 +117,27 @@ documentsCommand.command("get").description("Read one document and its immutable
   const document = await client.request<DocumentDetail>("GET", `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}`);
   printSuccess(document, jsonMode(), `${document.title}\nSlug: ${document.slug}\nCollection: ${document.collection ?? "none"}\nCurrent: v${document.currentVersion}\nVersions: ${document.versionCount}\nShared: ${document.shared ? "yes" : "no"}`);
 });
+documentsCommand.command("content").description("Retrieve the current document content through the authenticated API.").argument("<slug>")
+  .option("--format <format>", "content format: markdown or html", "markdown")
+  .option("-o, --output <file>", "write content to a file")
+  .action(async (slug: string, options: { format?: string; output?: string }) => {
+    const normalized = normalizeSlug(slug);
+    const format = parseDocumentContentFormat(options.format);
+    const { client } = await configuredClient();
+    const bytes = await client.requestBytes("GET", documentContentPath(normalized, format));
+    if (options.output) {
+      const output = resolve(options.output);
+      await writeFile(output, bytes);
+      printSuccess({ slug: normalized, format, output, byteSize: bytes.byteLength }, jsonMode(), `Wrote ${format} content for ${normalized} to ${output}.`);
+      return;
+    }
+    if (jsonMode()) {
+      const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      printSuccess({ slug: normalized, format, byteSize: bytes.byteLength, content }, true);
+      return;
+    }
+    process.stdout.write(bytes);
+  });
 documentsCommand.command("versions").description("List immutable versions for one document.").argument("<slug>").action(async (slug: string) => {
   const { client } = await configuredClient();
   const document = await client.request<DocumentDetail>("GET", `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}`);

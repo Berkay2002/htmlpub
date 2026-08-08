@@ -25,6 +25,7 @@ For a normal publish:
 htmlpub --json publish .\report.html --type report --dry-run
 htmlpub --json publish .\report.html --type report
 htmlpub --json documents get report
+htmlpub documents content report --format markdown
 htmlpub --json review wait report
 ```
 
@@ -46,3 +47,4 @@ Rules:
 - `share` returns a public reader `url`, agent-friendly `markdownUrl`, and raw HTML `contentUrl`, and rotates any existing links. Give agents `markdownUrl` by default. Do not run it unless the user requested sharing or rotation.
 - `unshare` revokes external access. Do not run it without explicit approval.
 - Use `request GET` only when a high-level read command is missing. Raw writes are intentionally unavailable.
+- If a public share URL is blocked and authenticated CLI access is available, use `documents content <slug>` as the retrieval fallback.
