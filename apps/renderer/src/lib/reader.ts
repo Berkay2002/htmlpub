@@ -613,6 +613,56 @@ const READER_RUNTIME_SCRIPT = `
     headings.forEach(function (heading) { observer.observe(heading); });
   }
 
+  function selectionHeading(node) {
+    var element = node && node.nodeType === 1 ? node : node && node.parentElement;
+    var current = element;
+    while (current && current !== content) {
+      if (/^H[1-6]$/.test(current.tagName)) return (current.textContent || "").trim() || null;
+      current = current.parentElement;
+    }
+    var headings = Array.prototype.slice.call(content.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+    var nearest = null;
+    headings.forEach(function (heading) {
+      if (heading === element || (heading.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)) nearest = heading;
+    });
+    return nearest ? (nearest.textContent || "").trim() || null : null;
+  }
+
+  function sendSelection() {
+    if (!inFrame) return;
+    var selection = window.getSelection();
+    if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
+      sendToParent({ type: "htmlpub-reader-selection", selection: null });
+      return;
+    }
+    var range = selection.getRangeAt(0);
+    var container = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
+    if (!container || (container !== content && !content.contains(container))) return;
+    var exact = selection.toString();
+    if (!exact.trim()) return;
+
+    var before = document.createRange();
+    before.selectNodeContents(content);
+    before.setEnd(range.startContainer, range.startOffset);
+    var after = document.createRange();
+    after.selectNodeContents(content);
+    after.setStart(range.endContainer, range.endOffset);
+    var prefix = before.toString();
+    var suffix = after.toString();
+    var start = prefix.length;
+    sendToParent({
+      type: "htmlpub-reader-selection",
+      selection: {
+        exact: exact,
+        prefix: prefix.slice(-160),
+        suffix: suffix.slice(0, 160),
+        start: start,
+        end: start + exact.length,
+        heading: selectionHeading(range.startContainer)
+      }
+    });
+  }
+
   document.addEventListener("click", function (event) {
     var target = event.target.closest && event.target.closest("[data-reader-action]");
     if (!target) return;
@@ -642,6 +692,7 @@ const READER_RUNTIME_SCRIPT = `
 
   window.addEventListener("scroll", updateProgress, { passive: true });
   window.addEventListener("resize", updateProgress);
+  document.addEventListener("selectionchange", sendSelection);
   window.addEventListener("message", function (event) {
     if (event.source !== window.parent || !event.data) return;
     if (event.data.type === "htmlpub-reader-preferences") applyPreferences(event.data.preferences, false);

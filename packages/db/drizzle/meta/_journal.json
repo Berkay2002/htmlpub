@@ -15,6 +15,13 @@
       "when": 1786111498284,
       "tag": "0001_petite_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786196764675,
+      "tag": "0002_free_marvex",
+      "breakpoints": true
     }
   ]
 }

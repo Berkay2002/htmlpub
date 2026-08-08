@@ -59,3 +59,51 @@ export type ShareResult = {
 };
 
 export type ApiEnvelope<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
+
+export const reviewSelectionSchema = z.object({
+  exact: z.string().min(1).max(4_000).refine((value) => value.trim().length > 0, "Selected text must contain visible characters"),
+  prefix: z.string().max(500).default(""),
+  suffix: z.string().max(500).default(""),
+  start: z.number().int().nonnegative().nullable().default(null),
+  end: z.number().int().nonnegative().nullable().default(null),
+  heading: z.string().trim().min(1).max(500).nullable().default(null)
+}).superRefine((selection, context) => {
+  if ((selection.start === null) !== (selection.end === null)) {
+    context.addIssue({ code: "custom", message: "Text positions must include both start and end" });
+  } else if (selection.start !== null && selection.end !== null && selection.end < selection.start) {
+    context.addIssue({ code: "custom", message: "Text position end must not precede start" });
+  }
+});
+
+export const createReviewCommentSchema = z.object({
+  body: z.string().trim().min(1).max(10_000),
+  selection: reviewSelectionSchema
+});
+
+export const reviewDecisionSchema = z.enum(["accept", "request_revision", "cancel"]);
+export const decideReviewSchema = z.object({ decision: reviewDecisionSchema });
+export const reviewRoundIdSchema = z.string().uuid();
+export const reviewRoundStatusSchema = z.enum(["open", "accepted", "revision_requested", "cancelled", "superseded"]);
+
+export type ReviewSelection = z.infer<typeof reviewSelectionSchema>;
+export type CreateReviewComment = z.infer<typeof createReviewCommentSchema>;
+export type ReviewDecision = z.infer<typeof reviewDecisionSchema>;
+export type ReviewRoundStatus = z.infer<typeof reviewRoundStatusSchema>;
+
+export type ReviewComment = {
+  id: string;
+  body: string;
+  selection: ReviewSelection;
+  createdAt: string;
+};
+
+export type ReviewStatus = {
+  slug: string;
+  title: string;
+  version: number;
+  roundId: string;
+  status: ReviewRoundStatus;
+  comments: ReviewComment[];
+  latestEventId: number | null;
+  decidedAt: string | null;
+};

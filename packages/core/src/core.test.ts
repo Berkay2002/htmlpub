@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, createOpaqueToken, createRenderTicket, createShareUrls, normalizeSlug, publishRequestSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
+import { MAX_HTML_BYTES, RENDER_TICKET_TTL_MS, createOpaqueToken, createRenderTicket, createReviewCommentSchema, createShareUrls, normalizeSlug, publishRequestSchema, reviewDecisionSchema, sha256, tokenMatches, verifyRenderTicket } from "./index";
 
 describe("the publishing contract", () => {
   it("normalizes a filename into a stable URL slug", () => {
@@ -46,5 +46,27 @@ describe("the publishing contract", () => {
 
   it("uses a known SHA-256 representation for upload identity", () => {
     expect(sha256("htmlpub")).toBe("a12d3a5e85014e1946315895773c66dd1f596f42437986d023a926ba14f08685");
+  });
+
+  it("accepts a review comment with a resilient text anchor", () => {
+    const comment = createReviewCommentSchema.parse({
+      body: "Move this launch to Wednesday.",
+      selection: {
+        exact: " Release the service on Monday ",
+        prefix: "Deployment starts after approval. ",
+        suffix: ". Notify support before rollout.",
+        start: 412,
+        end: 441,
+        heading: "Deployment"
+      }
+    });
+    expect(comment).toEqual(expect.objectContaining({ body: "Move this launch to Wednesday." }));
+    expect(comment.selection.exact).toBe(" Release the service on Monday ");
+  });
+
+  it("rejects an inverted text-position anchor and unknown review decisions", () => {
+    expect(createReviewCommentSchema.safeParse({ body: "Change this", selection: { exact: "text", start: 10, end: 5 } }).success).toBe(false);
+    expect(reviewDecisionSchema.safeParse("approve").success).toBe(false);
+    expect(reviewDecisionSchema.parse("accept")).toBe("accept");
   });
 });

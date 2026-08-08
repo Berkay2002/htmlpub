@@ -1,13 +1,13 @@
 ---
 name: htmlpub
-description: Route htmlpub CLI work to the repository's plugin skills. Use when Codex needs to publish self-contained HTML artifacts, inspect the htmlpub library, create public reader, Markdown, and raw-content links, retrieve shared content, or manage document versions.
+description: Route htmlpub CLI work to the repository's plugin skills. Use when an agent needs to publish a self-contained HTML artifact and wait through owner review, or inspect, share, retrieve, or version an existing htmlpub document.
 ---
 
 # htmlpub workflow
 
 Use the canonical plugin instructions carried by this repository:
 
-- Read `skills/publish-html-artifacts/SKILL.md` for validation, dry-run, upload, and publish verification.
+- Read `skills/publish-html-artifacts/SKILL.md` for the required publish, dashboard review link, blocking wait, revision, and acceptance loop.
 - Read `skills/manage-html-library/SKILL.md` for discovery, version history, public sharing, Markdown or raw HTML retrieval, revocation, and restoration.
 
 Verify the command and configuration first:
@@ -25,7 +25,10 @@ For a normal publish:
 htmlpub --json publish ./report.html --type report --dry-run
 htmlpub --json publish ./report.html --type report
 htmlpub --json documents get report
+htmlpub --json review wait report
 ```
+
+Run the workflow yourself and apply the completion criterion in `publish-html-artifacts`; an open review round is still active work.
 
 Discover documents before changing sharing:
 

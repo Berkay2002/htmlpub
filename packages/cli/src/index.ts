@@ -1,11 +1,12 @@
 import { Command } from "commander";
 import open from "open";
-import { normalizeSlug, type DocumentSummary, type PublishResult, type ShareResult, type StartUploadResult } from "@htmlpub/core";
+import { normalizeSlug, type DocumentSummary, type PublishResult, type ReviewStatus, type ShareResult, type StartUploadResult } from "@htmlpub/core";
 import { HtmlpubApiClient } from "./api-client";
-import { parseBoundedInteger, resolveCollection } from "./command-input";
+import { parseBoundedInteger, parseDurationMs, resolveCollection } from "./command-input";
 import { loadConfig, promptSecret, resolveConfiguration, saveConfig } from "./config";
 import { inspectHtmlFile } from "./html-file";
 import { printFailure, printProgress, printSuccess } from "./output";
+import { waitForReview } from "./review-wait";
 
 const program = new Command();
 program.name("htmlpub").description("Publish, version, and share self-contained HTML reports.").version("0.1.0").option("--json", "emit a stable JSON envelope on stdout");
@@ -133,6 +134,36 @@ documentsCommand.command("restore").description("Switch the document to an exist
   const result = await client.request<PublishResult>("POST", `/api/v1/documents/${encodeURIComponent(normalized)}/versions/${version}/restore`);
   printSuccess(result, jsonMode(), `Switched ${normalized}'s current version to v${result.version}. No new version was created.\n${result.dashboardUrl}`);
 });
+
+function reviewStatusPath(slug: string, roundId?: string): string {
+  const path = `/api/v1/documents/${encodeURIComponent(normalizeSlug(slug))}/review`;
+  return roundId ? `${path}?roundId=${encodeURIComponent(roundId)}` : path;
+}
+
+function reviewStatusText(review: ReviewStatus): string {
+  const comments = review.comments.length === 1 ? "1 comment" : `${review.comments.length} comments`;
+  return `${review.title} v${review.version}\nReview: ${review.status}\nComments: ${comments}\nRound: ${review.roundId}${review.latestEventId === null ? "" : `\nEvent cursor: ${review.latestEventId}`}`;
+}
+
+const reviewCommand = program.command("review").description("Inspect or wait for an owner decision on a published document.");
+reviewCommand.command("status").description("Show the current review round and anchored comments.").argument("<slug>").action(async (slug: string) => {
+  const { client } = await configuredClient();
+  const review = await client.request<ReviewStatus>("GET", reviewStatusPath(slug));
+  printSuccess(review, jsonMode(), reviewStatusText(review));
+});
+reviewCommand.command("wait").description("Wait until the owner accepts, requests a revision, or cancels the current review round.")
+  .argument("<slug>")
+  .option("--timeout <duration>", "return an open timedOut result after a duration such as 60s or 5m")
+  .option("--interval <duration>", "polling interval", "2s")
+  .action(async (slug: string, options: { timeout?: string; interval: string }) => {
+    const intervalMs = parseDurationMs(options.interval, "interval", { minimum: 250, maximum: 60_000 });
+    const timeoutMs = options.timeout === undefined ? undefined : parseDurationMs(options.timeout, "timeout", { minimum: 250, maximum: 24 * 60 * 60 * 1_000 });
+    const { client } = await configuredClient();
+    printProgress(`Waiting for an owner decision on ${normalizeSlug(slug)}…`, jsonMode());
+    const result = await waitForReview((roundId) => client.request<ReviewStatus>("GET", reviewStatusPath(slug, roundId)), { intervalMs, ...(timeoutMs === undefined ? {} : { timeoutMs }) });
+    const human = result.timedOut ? `${reviewStatusText(result)}\nNo decision arrived before the timeout.` : reviewStatusText(result);
+    printSuccess(result, jsonMode(), human);
+  });
 
 program.command("open").description("Open a document in the authenticated dashboard.").argument("<slug>").option("--print", "print the URL without launching a browser").action(async (slug: string, options: { print?: boolean }) => {
   const { client, resolved } = await configuredClient();

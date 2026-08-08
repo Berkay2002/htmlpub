@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { inspectHtmlFile } from "./html-file";
 import { loadConfig, resolveConfiguration } from "./config";
-import { parseBoundedInteger, resolveCollection } from "./command-input";
+import { parseBoundedInteger, parseDurationMs, resolveCollection } from "./command-input";
+import { waitForReview } from "./review-wait";
 
 const temporaryDirectories: string[] = [];
 afterEach(async () => Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))));
@@ -53,5 +54,39 @@ describe("the installed CLI input contract", () => {
     expect(parseBoundedInteger("100", "limit", { minimum: 1, maximum: 100 })).toBe(100);
     expect(() => parseBoundedInteger("101", "limit", { minimum: 1, maximum: 100 })).toThrow("between 1 and 100");
     expect(() => parseBoundedInteger("1.5", "version", { minimum: 1 })).toThrow("integer");
+  });
+
+  it("parses bounded wait durations", () => {
+    expect(parseDurationMs("500ms", "timeout", { minimum: 250 })).toBe(500);
+    expect(parseDurationMs("30s", "timeout", { minimum: 250 })).toBe(30_000);
+    expect(parseDurationMs("2m", "timeout", { minimum: 250 })).toBe(120_000);
+    expect(() => parseDurationMs("forever", "timeout", { minimum: 250 })).toThrow("duration");
+  });
+
+  it("waits through open review states and returns the owner decision", async () => {
+    const states = [
+      { roundId: "round-1", status: "open" as const, latestEventId: null },
+      { roundId: "round-1", status: "open" as const, latestEventId: null },
+      { roundId: "round-1", status: "revision_requested" as const, latestEventId: 7 }
+    ];
+    const requestedRounds: Array<string | undefined> = [];
+    const result = await waitForReview(async (roundId) => { requestedRounds.push(roundId); return states.shift()!; }, {
+      intervalMs: 1,
+      timeoutMs: 100,
+      sleep: async () => undefined,
+      now: (() => { let value = 0; return () => value++; })()
+    });
+    expect(result).toEqual(expect.objectContaining({ status: "revision_requested", latestEventId: 7, timedOut: false }));
+    expect(requestedRounds).toEqual([undefined, "round-1", "round-1"]);
+  });
+
+  it("returns a successful timeout state that can be resumed", async () => {
+    const result = await waitForReview(async () => ({ roundId: "round-1", status: "open" as const, latestEventId: null }), {
+      intervalMs: 5,
+      timeoutMs: 10,
+      sleep: async () => undefined,
+      now: (() => { let value = 0; return () => (value += 5); })()
+    });
+    expect(result).toEqual({ roundId: "round-1", status: "open", latestEventId: null, timedOut: true });
   });
 });

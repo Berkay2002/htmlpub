@@ -1,6 +1,6 @@
 # htmlpub
 
-htmlpub is a private publishing workspace for self-contained interactive HTML reports. It provides an authenticated Next.js dashboard, immutable version history, revocable latest-version share links, an isolated renderer, and an installable Node CLI.
+htmlpub is a private publishing and review workspace for self-contained interactive HTML reports. It provides an authenticated Next.js dashboard, immutable version history, text-anchored owner comments, blocking agent review waits, revocable latest-version share links, an isolated renderer, and an installable Node CLI.
 
 ![Library dashboard design reference](docs/design/library-dashboard.png)
 
@@ -55,6 +55,8 @@ Upload initiation validates a UTF-8 `.html` file declaration, creates an expirin
 
 Share tokens are 256-bit bearer secrets stored only as SHA-256 hashes. Publishing automatically creates one active share link when a document has none; later versions keep that same link and resolve the current version. Creating a new link manually revokes the previous link because the original secret cannot be recovered. A share page and its stable `/markdown` and `/raw` content URLs resolve the current version and send only a 30-day render ticket to the isolated renderer.
 
+Each published version also opens an authenticated review round. The owner can highlight rendered text, leave anchored comments, and accept, request revision, or cancel. `htmlpub review wait` blocks until that decision so an agent can publish a version, hand over the dashboard link, and continue in the same task without requiring the owner to return and say the review is complete.
+
 ## CLI
 
 ```bash
@@ -66,6 +68,7 @@ htmlpub auth login --endpoint https://your-web-project.vercel.app
 htmlpub --json publish ./summary.html --type summary --dry-run
 htmlpub --json publish ./summary.html --type summary
 htmlpub --json documents get summary
+htmlpub --json review wait summary
 htmlpub share report
 ```
 

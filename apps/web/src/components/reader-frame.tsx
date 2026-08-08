@@ -12,6 +12,15 @@ type ReaderPreferences = {
   theme: "system" | "light" | "dark";
 };
 
+export type ReaderSelection = {
+  exact: string;
+  prefix: string;
+  suffix: string;
+  start: number;
+  end: number;
+  heading: string | null;
+};
+
 const DEFAULT_PREFERENCES: ReaderPreferences = { scale: "md", width: "comfortable", theme: "system" };
 const PREFERENCES_KEY = "htmlpub-reader-preferences";
 
@@ -36,6 +45,16 @@ function isReaderPreferences(value: unknown): value is ReaderPreferences {
     (preferences.theme === "system" || preferences.theme === "light" || preferences.theme === "dark");
 }
 
+function isReaderSelection(value: unknown): value is ReaderSelection {
+  if (!value || typeof value !== "object") return false;
+  const selection = value as Partial<ReaderSelection>;
+  return typeof selection.exact === "string" && selection.exact.trim().length > 0 &&
+    typeof selection.prefix === "string" && typeof selection.suffix === "string" &&
+    typeof selection.start === "number" && Number.isInteger(selection.start) && selection.start >= 0 &&
+    typeof selection.end === "number" && Number.isInteger(selection.end) && selection.end >= selection.start &&
+    (selection.heading === null || typeof selection.heading === "string");
+}
+
 async function copyText(value: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(value);
@@ -53,7 +72,7 @@ async function copyText(value: string): Promise<void> {
   }
 }
 
-export function ReaderFrame({ src, rawSrc, title, className }: { src: string; rawSrc?: string; title: string; className?: string }) {
+export function ReaderFrame({ src, rawSrc, title, className, onSelection }: { src: string; rawSrc?: string; title: string; className?: string; onSelection?: (selection: ReaderSelection | null) => void }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [preferences, setPreferences] = useState<ReaderPreferences>(() => (typeof window === "undefined" ? DEFAULT_PREFERENCES : readPreferences()));
@@ -65,7 +84,7 @@ export function ReaderFrame({ src, rawSrc, title, className }: { src: string; ra
     function sendPreferences() {
       frame?.contentWindow?.postMessage({ type: "htmlpub-reader-preferences", preferences }, "*");
     }
-    function handleMessage(event: MessageEvent<{ type?: string; preferences?: unknown; text?: string }>) {
+    function handleMessage(event: MessageEvent<{ type?: string; preferences?: unknown; text?: string; selection?: unknown }>) {
       if (event.source !== frame?.contentWindow || !event.data) return;
       if (event.data.type === "htmlpub-reader-ready") sendPreferences();
       if (event.data.type === "htmlpub-reader-preferences" && isReaderPreferences(event.data.preferences)) {
@@ -73,11 +92,12 @@ export function ReaderFrame({ src, rawSrc, title, className }: { src: string; ra
         try { window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(event.data.preferences)); } catch { /* storage is optional */ }
       }
       if (event.data.type === "htmlpub-reader-copy" && event.data.text) void copyText(event.data.text);
+      if (event.data.type === "htmlpub-reader-selection" && onSelection) onSelection(isReaderSelection(event.data.selection) ? event.data.selection : null);
     }
     window.addEventListener("message", handleMessage);
     sendPreferences();
     return () => window.removeEventListener("message", handleMessage);
-  }, [preferences, reloadKey]);
+  }, [preferences, reloadKey, onSelection]);
 
   return (
     <div className={cn("relative", className)} aria-busy={loading && !failed}>

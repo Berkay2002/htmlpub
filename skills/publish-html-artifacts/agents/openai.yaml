@@ -1,4 +1,4 @@
 interface:
   display_name: "Publish HTML Artifacts"
-  short_description: "Publish agent reports with the htmlpub CLI"
-  default_prompt: "Use $publish-html-artifacts to publish this HTML summary to my htmlpub workspace."
+  short_description: "Publish, wait for review, and iterate to acceptance"
+  default_prompt: "Use $publish-html-artifacts to publish this HTML summary, give me the dashboard review link, wait for my decision in htmlpub, and keep revising under the same slug until I accept or cancel it."

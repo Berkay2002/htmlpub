@@ -1,7 +1,7 @@
 {
   "name": "htmlpub",
   "version": "0.1.0",
-  "description": "Publish and manage self-contained HTML summaries, plans, reviews, and reports with the htmlpub CLI.",
+  "description": "Publish, review, and version self-contained HTML summaries, plans, reviews, and reports with the htmlpub CLI.",
   "author": {
     "name": "Berkay2002",
     "url": "https://github.com/Berkay2002"
@@ -13,14 +13,14 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "htmlpub",
-    "shortDescription": "Publish agent artifacts as shareable HTML.",
-    "longDescription": "Use the htmlpub CLI to validate, publish, inspect, version, and share self-contained HTML summaries, plans, reviews, and reports.",
+    "shortDescription": "Publish agent artifacts and wait through owner review.",
+    "longDescription": "Use the htmlpub CLI to validate, publish, review, revise, inspect, version, and share self-contained HTML summaries, plans, reviews, and reports.",
     "developerName": "Berkay2002",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/Berkay2002/htmlpub",
     "defaultPrompt": [
-      "Publish this HTML summary to htmlpub.",
+      "Publish this HTML summary to htmlpub and wait for my review decision.",
       "List my published HTML reports.",
       "Create public reader and content links."
     ]

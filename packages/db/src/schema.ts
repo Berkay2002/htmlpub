@@ -1,6 +1,6 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import type { PublishResult } from "@htmlpub/core";
+import type { PublishResult, ReviewRoundStatus } from "@htmlpub/core";
 
 export const accounts = pgTable("accounts", {
   id: text("id").primaryKey(),
@@ -58,6 +58,43 @@ export const shareLinks = pgTable("share_links", {
   uniqueIndex("share_links_hash_unique").on(table.tokenHash),
   uniqueIndex("share_links_active_document_unique").on(table.documentId).where(sql`${table.revokedAt} is null`),
   index("share_links_document_idx").on(table.documentId)
+]);
+
+export const reviewRounds = pgTable("review_rounds", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  versionId: uuid("version_id").notNull().references(() => documentVersions.id, { onDelete: "cascade" }),
+  status: text("status").$type<ReviewRoundStatus>().default("open").notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => [
+  uniqueIndex("review_rounds_open_document_unique").on(table.documentId).where(sql`${table.status} = 'open'`),
+  index("review_rounds_document_idx").on(table.documentId, table.createdAt),
+  index("review_rounds_version_idx").on(table.versionId)
+]);
+
+export const reviewComments = pgTable("review_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  reviewRoundId: uuid("review_round_id").notNull().references(() => reviewRounds.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  exactText: text("exact_text").notNull(),
+  prefixText: text("prefix_text").default("").notNull(),
+  suffixText: text("suffix_text").default("").notNull(),
+  startPosition: integer("start_position"),
+  endPosition: integer("end_position"),
+  heading: text("heading"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index("review_comments_round_idx").on(table.reviewRoundId, table.createdAt)]);
+
+export const reviewEvents = pgTable("review_events", {
+  id: serial("id").primaryKey(),
+  documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  reviewRoundId: uuid("review_round_id").notNull().references(() => reviewRounds.id, { onDelete: "cascade" }),
+  type: text("type").$type<Exclude<ReviewRoundStatus, "open" | "superseded">>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => [
+  uniqueIndex("review_events_round_unique").on(table.reviewRoundId),
+  index("review_events_document_cursor_idx").on(table.documentId, table.id)
 ]);
 
 export const apiTokens = pgTable("api_tokens", {

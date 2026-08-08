@@ -4,7 +4,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getRepository } from "@/lib/repository";
 import { renderUrl } from "@/lib/render";
 import { DocumentActions, RestoreButton } from "@/components/document-actions";
-import { ReaderFrame } from "@/components/reader-frame";
+import { DocumentReview } from "@/components/document-review";
 import { CopyMarkdownButton } from "@/components/share-markdown-actions";
 import { Badge } from "@htmlpub/ui/components/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@htmlpub/ui/components/breadcrumb";
@@ -19,6 +19,7 @@ export default async function DocumentPage({ params }: Props) {
   const [ownerId, { slug }] = await Promise.all([requireOwnerPage(), params]);
   const document = await getRepository().getDocument(ownerId, slug);
   if (!document?.currentVersionId) notFound();
+  const review = await getRepository().getReviewStatus(ownerId, document.slug);
   const previewUrl = renderUrl(document.currentVersionId, "reader");
   const rawPreviewUrl = renderUrl(document.currentVersionId, "raw");
   const markdownUrl = `/api/v1/documents/${encodeURIComponent(document.slug)}/markdown`;
@@ -33,7 +34,7 @@ export default async function DocumentPage({ params }: Props) {
         <div className="flex flex-wrap items-center gap-2"><CopyMarkdownButton markdownUrl={markdownUrl} /><a className={`${buttonVariants({ variant: "outline", size: "sm" })} rounded-xl`} href={previewUrl} target="_blank" rel="noreferrer"><ExternalLink data-icon="inline-start" />Open fullscreen</a></div>
       </header>
 
-      <ReaderFrame title={document.title} src={previewUrl} rawSrc={rawPreviewUrl} className="document-preview" />
+      <DocumentReview slug={document.slug} title={document.title} src={previewUrl} rawSrc={rawPreviewUrl} initialReview={review} />
       <DocumentActions slug={document.slug} shared={document.shared} />
 
       <Card className="rounded-2xl border-border/80 bg-card/95 shadow-sm">

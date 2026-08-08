@@ -23,6 +23,7 @@ describe("the artifact reader mode", () => {
     expect(readerHtml).toContain("<h1>Report</h1>");
     expect(readerHtml).toContain("</article>");
     expect(readerHtml).toContain("data-htmlpub-reader-script");
+    expect(readerHtml).toContain("htmlpub-reader-selection");
   });
 
   it("does not wrap a reader document twice", () => {

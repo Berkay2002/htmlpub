@@ -25,6 +25,8 @@ htmlpub --json collections list
 htmlpub --json documents list --limit 20
 htmlpub --json documents get launch-plan
 htmlpub --json documents versions launch-plan
+htmlpub --json review status launch-plan
+htmlpub --json review wait launch-plan
 htmlpub open launch-plan
 htmlpub --json share launch-plan --dry-run
 htmlpub share launch-plan
@@ -34,6 +36,20 @@ htmlpub unshare launch-plan
 `--type summary`, `plan`, `review`, or `report` assigns the matching stable collection. Use `--collection` for any other collection name. The two flags are intentionally mutually exclusive.
 
 Publishing to an existing owner-scoped slug creates the next version. Identical content returns the existing version without uploading bytes. Use a stable `--slug` when successive agent runs should update the same artifact. Publishing automatically creates one active share link when the document has none, and later versions keep that link pointed at the latest version. `share` is the explicit rotate operation: it creates a new token and revokes any previous share link because share secrets are never stored in recoverable form.
+
+## Review loop
+
+Every published version opens one owner-authenticated review round. In the dashboard, the owner can highlight rendered text, add anchored comments, and choose Accept, Request revision, or Cancel. Comments alone keep the round open.
+
+Use `review status` to inspect the round. `review wait` polls until an owner decision closes it and then returns the decision with all comments in document order:
+
+```bash
+htmlpub --json review status launch-plan
+htmlpub --json review wait launch-plan
+htmlpub --json review wait launch-plan --timeout 60s --interval 2s
+```
+
+A timeout is a successful result with `timedOut: true`, so an agent can reconnect without treating normal inactivity as failure. Pressing Ctrl+C stops the local wait without cancelling the review. Publishing the next version under the same slug supersedes an older open round and opens a new one.
 
 The JSON share result contains three public bearer links:
 
